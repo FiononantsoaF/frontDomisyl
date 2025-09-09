@@ -22,6 +22,7 @@ import { useNavigate } from "react-router-dom";
 import { Elements } from '@stripe/react-stripe-js';
 import PaiementStripe from './components/PaiementStripe';
 import AppointmentsTable from './components/AppointmentsTable';
+import { Tag, Sparkles } from "lucide-react";
 import { ResponseVerification, BookingVerification, CrenVerification } from './api/serviceCategoryApi';
 
 const stripePromise = loadStripe('pk_test_51RmAH4PMG09tDqBqfeJKApH3F1NgBd6W7QWY0rZYBgPfqMPNVeocv9FLUYa9ErmbDx666zmtnBuGKE49c8mv7gh300sdjbSwdF');
@@ -765,7 +766,7 @@ function App() {
               }}
               className="w-full rounded-md border border-gray-300 px-3 py-2 focus:outline-none focus:ring-2 focus:ring-[#f18f34]"
               required
-              disabled={fromSubscription} //
+              disabled={fromSubscription} 
             >
               <option value="">Sélectionnez une prestation</option>
               {getServiceTypes().map((type, index) => (
@@ -1063,7 +1064,6 @@ function App() {
           <div className="grid grid-cols-1 md:grid-cols-1 gap-8">*
             {/* liste des rendez-vous */}
              <AppointmentsTable appointments={appointments} />
-
             {/* Liste des abonnements */}
             <div className="overflow-x-auto rounded-xl shadow-md border border-gray-200">
               <h3 className="text-xl font-semibold text-gray-800 mb-4" style={{ fontFamily: 'Agency FB' }}>
@@ -1102,7 +1102,7 @@ function App() {
                           setIsLoginOpen(false);
                           handleSubscriptionBooking(sub);
                         }}
-                        className="bg-[#fdc800] hover:bg-[#f9b131] text-[#1d1d1b] px-2 py-1 rounded-full flex items-center gap-1 transition-colors"
+                        className="bg-[#f9b131] hover:bg-[#fdc800] text-[#1d1d1b] px-2 py-1 rounded-full flex items-center gap-1 transition-colors"
                         style={{ fontFamily: 'Agency FB, sans-serif' }}>
                         Prendre RDV
                       </button>
@@ -1208,8 +1208,17 @@ function App() {
                   {Array.isArray(service.details?.types) &&
                    service.details.types.map((type, index) => (
                     <div key={index} className="bg-gray-50 p-4 rounded-lg ">
+                      <div className="mb-2">
+                        {type.price_promo && (
+                          // bg-[#f18f34]
+                          <span className="inline-flex items-center gap-1 bg-[red] text-white text-xs font-bold px-1 py-0 rounded-full">
+                            <Sparkles className="w-3 h-3" />
+                            Promotion
+                          </span>
+                        )}
+                      </div>
                       <div className="flex justify-between items-center mb-2">
-                        <h3 className="text-lg font-semibold">{type.title}</h3>
+                          <h3 className="text-lg font-semibold">{type.title}</h3>
                           <div className="flex items-center gap-3">
                             {type.price_promo ? (
                               <>
@@ -1222,14 +1231,8 @@ function App() {
                                     {type.price_promo}
                                     {Number(type.validity_days) === 30 ? '/mois' : ''}
                                   </span>
-                                  {/* {type.pourcent && (
-                                  <span className="ml-2 inline-block bg-red-100 text-red-700 text-xs font-bold px-1 py-0.5 rounded-full">
-                                    -{type.pourcent}%
-                                  </span>
-                                )} */}
-                                </span>
 
- 
+                                </span>
                               </>
                             ) : (
                               <span className="text-[#f18f34] font-semibold">
@@ -1237,7 +1240,8 @@ function App() {
                                 {Number(type.validity_days) === 30 ? '/mois' : ''}
                               </span>
                             )}
-                          </div>
+                        </div>
+
            
                       </div>
                       <div className="flex items-center text-gray-500 text-sm justify-between">
@@ -1276,57 +1280,74 @@ function App() {
     <div className="min-h-screen bg-white mb-5">
       {/* Hero Section */}
       <header className="relative h-screen">
-        <div 
-          className="absolute inset-1 bg-cover bg-center" 
-          style={{
-            backgroundImage: `url(${back})`,
-            backgroundPosition: 'center 15%' 
-          }}
-        >
-          <div className="absolute inset-0 bg-black/40" />
-        </div>
-        
-        <nav className="relative z-20 flex items-center justify-between px-6 py-16 max-w-7xl mx-auto">
-          <div className="flex items-center">
-          </div>
-          <button 
-            onClick={openLoginModal}
-            className="bg-[#f18f34] hover:bg-[#f9b131] text-white px-6 py-2 rounded-full transition-colors"
-            style={{ fontFamily: 'Agency FB, sans-serif' }}
-          >
-            Mon Compte
-          </button>
-        </nav>
-        <div className="relative z-10 flex flex-col items-center justify-center h-full text-center px-3">
-          <h1 
-            className="text-5xl md:text-7xl text-white mb-6"
-            style={{ fontFamily: 'Agency FB, sans-serif' }}
-          >
-            Votre Bien-être à Domicile
-          </h1>
-          <p className="text-xl text-white mb-8 max-w-2xl">
-            Découvrez nos services de massage, sport et soins du corps, 
-            directement chez vous pour un maximum de confort.
-          </p>
-          <div className="flex gap-4">
-            <button 
-              onClick={() => setIsBookingOpen(true)}
-              className="bg-[#fdc800] hover:bg-[#f9b131] text-[#1d1d1b] px-8 py-3 rounded-full flex items-center gap-2 transition-colors"
-              style={{ fontFamily: 'Agency FB, sans-serif' }}
-            >
-              <Calendar className="w-5 h-5" />
-              Prendre RDV
-            </button>
-            <button 
-              onClick={() => setIsContactOpen(true)}
-              className="bg-white/10 hover:bg-white/20 text-white px-8 py-3 rounded-full flex items-center gap-2 backdrop-blur-sm transition-colors"
-              style={{ fontFamily: 'Agency FB, sans-serif' }}
-            >
-              <MessageSquare className="w-5 h-5" />
-              Nous Contacter
-            </button>
-          </div>
-        </div>
+              <div 
+                className="absolute inset-1 bg-cover bg-center" 
+                style={{
+                  backgroundImage: `url(${back})`,
+                  backgroundPosition: 'center 15%' 
+                }}
+              >
+                <div className="absolute inset-0 bg-black/40" />
+              </div>        
+              <nav className="relative z-20 flex items-center justify-between px-6 py-6 max-w-10xl" >
+                {/* Bloc gauche : Promotion */}
+                <div className="absolute top-1 left-0 w-100 bg-[#f18f34] text-white text-center py-8 px-8 z-30 shadow-2xl transform -rotate-12  pr-[13rem]" 
+                  style={{ transform: 'rotate(-29deg)', width:'56%',height:'', marginLeft:'-6rem',fontFamily: 'Agency FB, sans-serif'}}>
+                  <p 
+                    className="font-extrabold text-2xl leading-tight drop-shadow-lg"
+                    style={{ fontFamily: 'Agency FB, sans-serif' }}
+                  >
+                    OFFRES SPÉCIALES LANCEMENT<br />
+                    <span className="text-yellow-200 text-xl">-25%</span> sur toutes les prestations<br />
+                    <span className="text-sm bg-black/30 px-2 py-1 rounded">
+                      du 20/09 au 20/10/2025
+                    </span>
+                  </p>
+                  <div className="absolute inset-0 bg-gradient-to-r from-transparent via-white/20 to-transparent -skew-x-12 animate-slide"></div>
+                </div>
+
+                {/* Bloc droit : Mon Compte */}
+                <div className="ml-auto">
+                  <button 
+                    onClick={openLoginModal}
+                    className="bg-[#f18f34] hover:bg-[#f9b131] text-white px-6 py-2 rounded-full transition-colors"
+                    style={{ fontFamily: 'Agency FB, sans-serif' }}
+                  >
+                    Mon Compte
+                  </button>
+                </div>
+              </nav>
+              <div className="relative z-8 flex flex-col items-center justify-center h-full text-center px-2"
+                    style={{ marginTop:'5rem' }}>
+                <h1 
+                  className="text-5xl md:text-7xl text-white mb-4"
+                  style={{ fontFamily: 'Agency FB, sans-serif' }}
+                >
+                  Votre Bien-être à Domicile
+                </h1>
+                <p className="text-xl text-white mb-4 max-w-2xl">
+                  Découvrez nos services de massage, sport et soins du corps, 
+                  directement chez vous pour un maximum de confort.
+                </p>
+                <div className="flex gap-2">
+                  <button 
+                    onClick={() => setIsBookingOpen(true)}
+                    className="bg-[#f9b131] hover:bg-[#fdc800] text-[#1d1d1b] px-8 py-3 rounded-full flex items-center gap-2 transition-colors"
+                    style={{ fontFamily: 'Agency FB, sans-serif' }}
+                  >
+                    <Calendar className="w-5 h-5" />
+                    Prendre RDV
+                  </button>
+                  <button 
+                    onClick={() => setIsContactOpen(true)}
+                    className="bg-white/10 hover:bg-white/20 text-white px-8 py-3 rounded-full flex items-center gap-2 backdrop-blur-sm transition-colors"
+                    style={{ fontFamily: 'Agency FB, sans-serif' }}
+                  >
+                    <MessageSquare className="w-5 h-5" />
+                    Nous Contacter
+                  </button>
+                </div>
+              </div>
       </header>
 
       {/* Services Section */}
