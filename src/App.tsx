@@ -1291,10 +1291,18 @@ function App() {
               </div>        
               <nav className="relative z-20 flex items-center justify-between px-6 py-6 max-w-10xl" >
                 {/* Bloc gauche : Promotion */}
-                <div className="absolute top-1 left-0 w-100 bg-[#f18f34] text-white text-center py-8 px-8 z-30 shadow-2xl transform -rotate-12  pr-[13rem]" 
-                  style={{ transform: 'rotate(-29deg)', width:'56%',height:'', marginLeft:'-6rem',fontFamily: 'Agency FB, sans-serif'}}>
+                  <div className="absolute top-1 left-0 w-100 bg-[#f18f34] text-white text-center py-8 px-8 z-30 shadow-2xl transform -rotate-12 pr-[13rem] animate-border-glow" 
+                  style={{ 
+                    transform: 'rotate(-35deg)', 
+                    width:'46%',
+                    height:'100%',
+                    paddingTop:'0.5rem', 
+                    marginLeft:'-6rem',
+                    fontFamily: 'Agency FB, sans-serif',
+                    boxShadow: '0 0 20px rgba(0,0,0,0.3), inset 0 0 20px rgba(255,255,255,0.1)'
+                  }}>
                   <p 
-                    className="font-extrabold text-2xl leading-tight drop-shadow-lg"
+                    className="font-extrabold text-1xl leading-tight drop-shadow-lg"
                     style={{ fontFamily: 'Agency FB, sans-serif' }}
                   >
                     OFFRES SPÉCIALES LANCEMENT<br />
