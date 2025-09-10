@@ -307,5 +307,18 @@ export const servicesService = {
       throw error;
     }
   },
+  
+  checkAdress: async (payload: string): Promise<boolean> => {
+    const value = payload.trim();
+    const onlyNumbers = /^[0-9]+$/.test(value);
+    const hasLetter = /[A-Za-z]/.test(value);
+    return hasLetter && !onlyNumbers;
+  },
+
+  checkEmailFormat: async (email: string): Promise<boolean> => {
+    const regex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+    return regex.test(email.trim());
+  }
+
 
 };

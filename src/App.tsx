@@ -39,9 +39,10 @@ function App() {
   const [selectedShowService, setSelectedShowService] = useState('');
   const [showServices, setShowServices] = useState(false);
   const [showList, setShowList] = useState<boolean>(() => {
-    const savedShowList = localStorage.getItem('showList');
+  const savedShowList = localStorage.getItem('showList');
     return savedShowList ? JSON.parse(savedShowList) : false;
   });
+  const [addressError, setAddressError] = useState<string | null>(null);
   const [showCareDetails, setShowCareDetails] = useState(false);
   const [isProcessingPayment, setIsProcessingPayment] = useState(false);
 
@@ -70,13 +71,13 @@ function App() {
     }
   };
 
-
   const [formData, setFormData] = useState({
     name: '',
     phone: '',
     email: '',
     address: '',
     password:'',
+    confirmPassword:'',
     notes: ''
   });
   const [clientData, setClientData] = useState({
@@ -177,6 +178,7 @@ function App() {
         email : userdetail.email || " ",
         address: userdetail.address,
         password:'',
+        confirmPassword:'',
         notes: ''
       });
     }
@@ -232,17 +234,25 @@ function App() {
       console.log("deconnexion");
   };
 
-  const handleInputChange = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>) => {
+  const handleInputChange = async (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>) => {
     const { name, value } = e.target;
     setFormData(prev => ({
       ...prev,
       [name]: value
     }));
+    if (name === "address") {
+        const error = await servicesService.checkAdress(value);
+          if (!error) {
+            setAddressError("L'adresse ne pas être uniquement des chiffres.");
+            
+          } else {
+            setAddressError(null);
+          }
+    }
   };
 
   const handlePaiement = async (e: React.FormEvent) => {
     e.preventDefault();
-
     const minimum = Number(paiementData.price) * (30 / 100);
     if(!paiementData.amount ||  Number(paiementData.amount) < 0 || Number(paiementData.amount) < minimum ) {
       alert("Veuillez sélectionner montant valide");
@@ -268,7 +278,6 @@ function App() {
         resetPaiementForm();
         setIsPaiementOpen(false);
         refreshPage();
-
       } else{
         alert("erreur " + result.message);
         setLoadingpay(false);
@@ -277,15 +286,12 @@ function App() {
     } catch {
       setLoadingpay(true);
     }
-      
-
   };
 
   const getServiceTypes = () => {
     const service = services.find((s) => s.title === selectedService);
     return service?.details?.types || [];
   };
-
 
   const handleBooking = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -298,14 +304,21 @@ function App() {
       alert("Veuillez sélectionner un créneau.");
       return;
     }
+    if(formData.password != formData.confirmPassword){
+      alert("Veuillez saisir le bon mot de passe");
+      return;
+    } 
+    if(addressError != null){
+      alert("Veuillez saisir une adresse valide");
+      return;
+    }
     setLoading(true);
-    console.log("subscription_id",selectedSubId);
     try {
       const selectedProviderObj = employees.find(e => e.id.toString() === selectedProviderId);
       const selectedCreneauObj = selectedProviderObj?.creneaux.find(
         (c) => Number(c.id) === selectedCreneauId
       );
-      console.log("heure selectionné",selectedCreneauId);
+      // console.log("heure selectionné",selectedCreneauId);
       const startDateTime = `${format(selectedDate, 'yyyy-MM-dd')} ${selectedCreneauObj?.creneau}`;
       const payload: BookingPayload = {
         clients: {
@@ -323,6 +336,7 @@ function App() {
         comment: formData.notes,
         from_subscription: !!selectedSubId && Number(selectedSubId) > 0
       };
+
       console.log("ettoo no  alefa",payload);
       const result = await servicesService.book(payload);
       if (result.success && result.data) {
@@ -334,7 +348,6 @@ function App() {
               setIsBookingOpen(false);
           } else {
               let price = 0;
-
               if (result.data.price_promo != null) {
                   price = result.data.price_promo;
               } else {
@@ -390,6 +403,7 @@ function App() {
         email: '',
         address: '',
         password:'',
+        confirmPassword:'',
         notes: ''
       });
       setSelectedSubId(null);
@@ -512,6 +526,7 @@ function App() {
         email: userdetail.email || '',
         address: userdetail.address,
         password: '',
+        confirmPassword:'',
         notes: ''
       });
     }
@@ -521,7 +536,6 @@ function App() {
     setFromSubscription(true);
     setSelectedSubId(subscription.id);
     setSelectedService(subscription.formule);
-
     const selectedServiceData = services.find(service => service.title === subscription.formule);
     const serviceTypes: ServiceType[] = selectedServiceData?.details?.types || [];
 
@@ -545,14 +559,12 @@ function App() {
           type.title.toLowerCase().includes(subscription.service.toLowerCase()) ||
           subscription.service.toLowerCase().includes(type.title.toLowerCase())
       );
-
       if (partialMatch) {
         setSelectedMassageType(partialMatch.id);
         console.log(`Service présélectionné (correspondance partielle): ${partialMatch.title}`);
       } else {
         console.warn('Aucune correspondance trouvée pour le service :', subscription.service);
       }
-
       setSelectedProvider('');
     }
   };
@@ -578,7 +590,7 @@ function App() {
                     Payer par Carte (Stripe)
                   </button> */}
                 </div>
-
+ 
               </div>
           </div>
         )}
@@ -740,7 +752,7 @@ function App() {
               setSelectedProvider('');
               
             }}
-            className="w-full rounded-md border border-gray-300 px-3 py-2 focus:outline-none focus:ring-2 focus:ring-[#f18f34]"
+            className="w-full rounded-md border border-gray-300 px-2 py-1 focus:outline-none focus:ring-2 focus:ring-[#f18f34]"
             required
             disabled={fromSubscription} 
           >
@@ -764,7 +776,7 @@ function App() {
                 setSelectedMassageType(e.target.value);
                 setSelectedProvider('');
               }}
-              className="w-full rounded-md border border-gray-300 px-3 py-2 focus:outline-none focus:ring-2 focus:ring-[#f18f34]"
+              className="w-full rounded-md border border-gray-300 px-2 py-1 focus:outline-none focus:ring-2 focus:ring-[#f18f34]"
               required
               disabled={fromSubscription} 
             >
@@ -787,7 +799,8 @@ function App() {
             minDate={new Date()}
             excludeDates={disabledDates}
             placeholderText="Sélectionnez une date"
-            className="w-full rounded-md border border-gray-300 px-3 py-2 focus:outline-none focus:ring-2 focus:ring-[#f18f34]"
+            className="w-full rounded-md border border-gray-300 px-2 py-1 focus:outline-none focus:ring-2 focus:ring-[#f18f34]"
+            wrapperClassName="w-full" 
             dateFormat="yyyy-MM-dd"
             dayClassName={(date) =>
               isDisabled(date) ? "disabled-red-date" : ""
@@ -854,8 +867,6 @@ function App() {
                 </p>
               )}
 
-
-
             {/* {selectedProviderId && (() => {
               const selectedProvider = employees.find(e => e.id.toString() === selectedProviderId);
               return (
@@ -911,7 +922,7 @@ function App() {
             name="name"
             value={formData.name}
             onChange={handleInputChange}
-            className="w-full rounded-md border border-gray-300 px-3 py-2 focus:outline-none focus:ring-2 focus:ring-[#f18f34]"
+            className="w-full rounded-md border border-gray-300 px-2 py-1 focus:outline-none focus:ring-2 focus:ring-[#f18f34]"
             required
             readOnly={fromSubscription}
           />
@@ -926,7 +937,7 @@ function App() {
             name="phone"
             value={formData.phone}
             onChange={handleInputChange}
-            className="w-full rounded-md border border-gray-300 px-3 py-2 focus:outline-none focus:ring-2 focus:ring-[#f18f34]"
+            className="w-full rounded-md border border-gray-300 px-2 py-1 focus:outline-none focus:ring-2 focus:ring-[#f18f34]"
             required
             readOnly={fromSubscription}
           />
@@ -941,13 +952,14 @@ function App() {
             name="email"
             value={formData.email}
             onChange={handleInputChange}
-            className="w-full rounded-md border border-gray-300 px-3 py-2 focus:outline-none focus:ring-2 focus:ring-[#f18f34]"
+            className="w-full rounded-md border border-gray-300 px-2 py-1 focus:outline-none focus:ring-2 focus:ring-[#f18f34]"
             required
             readOnly={fromSubscription}
           />
         </div>
         {!localStorage.getItem("user_id") &&(
-          <div>
+        <>
+        <div>
           <label className="block text-sm font-medium text-gray-700 mb-1">
             Mot de passe
           </label>
@@ -956,10 +968,25 @@ function App() {
             name="password"
             value={formData.password}
             onChange={handleInputChange}
-            className="w-full rounded-md border border-gray-300 px-3 py-2 focus:outline-none focus:ring-2 focus:ring-[#f18f34]"
-            
+            className="w-full rounded-md border border-gray-300 px-2 py-1 focus:outline-none focus:ring-2 focus:ring-[#f18f34]"   
           />
         </div>
+        <div>
+          <label className="block text-sm font-medium text-gray-700 mb-1">
+            Confirmation mot de passe
+          </label>
+          <input
+            type="password"
+            name="confirmPassword"
+            value={formData.confirmPassword}
+            onChange={handleInputChange}
+            className="w-full rounded-md border border-gray-300 px-2 py-1 focus:outline-none focus:ring-2 focus:ring-[#f18f34]"
+          />
+          {formData.confirmPassword && formData.password !== formData.confirmPassword && (
+            <p className="text-red-500 text-sm mt-1">Les mots de passe ne correspondent pas</p>
+          )}
+        </div>
+        </>
         )}
 
         <div>
@@ -971,10 +998,13 @@ function App() {
             name="address"
             value={formData.address}
             onChange={handleInputChange}
-            className="w-full rounded-md border border-gray-300 px-3 py-2 focus:outline-none focus:ring-2 focus:ring-[#f18f34]"
+            className="w-full rounded-md border border-gray-300 px-2 py-1 focus:outline-none focus:ring-2 focus:ring-[#f18f34]"
             required
             readOnly={fromSubscription}
           />
+          {addressError && (
+            <p className="text-red-500 text-sm mt-1">{addressError}</p>
+          )}
         </div>
       </div>
 
@@ -987,7 +1017,7 @@ function App() {
           value={formData.notes}
           onChange={handleInputChange}
           rows={3}
-          className="w-full rounded-md border border-gray-300 px-3 py-2 focus:outline-none focus:ring-2 focus:ring-[#f18f34]"
+          className="w-full rounded-md border border-gray-300 px-2 py-1 focus:outline-none focus:ring-2 focus:ring-[#f18f34]"
           placeholder="Informations complémentaires pour votre réservation..."
         />
       </div>
