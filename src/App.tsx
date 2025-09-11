@@ -1310,84 +1310,76 @@ function App() {
     <div className="min-h-screen bg-white mb-5">
       {/* Hero Section */}
       <header className="relative h-screen">
-              <div 
-                className="absolute inset-1 bg-cover bg-center" 
-                style={{
-                  backgroundImage: `url(${back})`,
-                  backgroundPosition: 'center 15%' 
-                }}
-              >
-                <div className="absolute inset-0 bg-black/40" />
-              </div>        
-              <nav className="relative z-20 flex items-center justify-between px-6 py-6 max-w-10xl" >
-                {/* Bloc gauche : Promotion */}
-                  <div className="absolute top-1 left-0 w-100 bg-[#f18f34] text-white text-center py-8 px-8 z-30 shadow-2xl transform -rotate-12 pr-[13rem] animate-border-glow" 
-                  style={{ 
-                    transform: 'rotate(-35deg)', 
-                    width:'46%',
-                    height:'100%',
-                    paddingTop:'0.5rem', 
-                    marginLeft:'-6rem',
-                    fontFamily: 'Agency FB, sans-serif',
-                    boxShadow: '0 0 20px rgba(0,0,0,0.3), inset 0 0 20px rgba(255,255,255,0.1)'
-                  }}>
-                  <p 
-                    className="font-extrabold text-1xl leading-tight drop-shadow-lg"
-                    style={{ fontFamily: 'Agency FB, sans-serif' }}
-                  >
-                    OFFRES SPÉCIALES LANCEMENT<br />
-                    <span className="text-yellow-200 text-xl">-25%</span> sur toutes les prestations<br />
-                    <span className="text-sm bg-black/30 px-2 py-1 rounded">
-                      du 20/09 au 20/10/2025
-                    </span>
-                  </p>
-                  <div className="absolute inset-0 bg-gradient-to-r from-transparent via-white/20 to-transparent -skew-x-12 animate-slide"></div>
-                </div>
+        {/* Image de fond */}
+        <div 
+          className="absolute inset-0 bg-cover bg-center"
+          style={{ backgroundImage: `url(${back})`, backgroundPosition: 'center 15%' }}
+        >
+        <div className="absolute inset-0" />
+        </div>
+          <div className="absolute top-8 left-1/5 transform -translate-x-1/2 z-30 overflow-hidden w-full px-4 sm:px-6">
+            <div
+              className="bg-[#f18f34] text-white text-center py-4 sm:py-6 shadow-2xl relative"
+              style={{
+                transform: 'rotate(-35deg)',
+                transformOrigin: 'center center',
+                width: '120%',
+                maxWidth: '1600px',
+                fontFamily: 'Agency FB, sans-serif',
+                boxShadow: '0 0 20px rgba(0,0,0,0.3), inset 0 0 20px rgba(255,255,255,0.1)',
+              }}
+            >
+              <p className="font-extrabold text-base sm:text-lg md:text-xl leading-tight drop-shadow-lg">
+                OFFRES SPÉCIALES LANCEMENT<br />
+                <span className="text-yellow-200 text-lg sm:text-xl md:text-2xl">-25%</span> sur toutes les prestations<br />
+                <span className="text-sm sm:text-base bg-black/30 px-2 py-1 rounded">
+                  du 20/09 au 20/10/2025
+                </span>
+              </p>
+              <div className="absolute inset-0 bg-gradient-to-r from-transparent via-white/20 to-transparent -skew-x-12 animate-slide"></div>
+            </div>
+          </div>
 
-                {/* Bloc droit : Mon Compte */}
-                <div className="ml-auto">
-                  <button 
-                    onClick={openLoginModal}
-                    className="bg-[#f18f34] hover:bg-[#f9b131] text-white px-6 py-2 rounded-full transition-colors"
-                    style={{ fontFamily: 'Agency FB, sans-serif' }}
-                  >
-                    Mon Compte
-                  </button>
-                </div>
-              </nav>
-              <div className="relative z-8 flex flex-col items-center justify-center h-full text-center px-2"
-                    style={{ marginTop:'5rem' }}>
-                <h1 
-                  className="text-5xl md:text-7xl text-white mb-4"
-                  style={{ fontFamily: 'Agency FB, sans-serif' }}
-                >
-                  Votre Bien-être à Domicile
-                </h1>
-                <p className="text-xl text-white mb-4 max-w-2xl">
-                  Découvrez nos services de massage, sport et soins du corps, 
-                  directement chez vous pour un maximum de confort.
-                </p>
-                <div className="flex gap-2">
-                  <button 
-                    onClick={() => setIsBookingOpen(true)}
-                    className="bg-[#f9b131] hover:bg-[#fdc800] text-[#1d1d1b] px-8 py-3 rounded-full flex items-center gap-2 transition-colors"
-                    style={{ fontFamily: 'Agency FB, sans-serif' }}
-                  >
-                    <Calendar className="w-5 h-5" />
-                    Prendre RDV
-                  </button>
-                  <button 
-                    onClick={() => setIsContactOpen(true)}
-                    className="bg-white/10 hover:bg-white/20 text-white px-8 py-3 rounded-full flex items-center gap-2 backdrop-blur-sm transition-colors"
-                    style={{ fontFamily: 'Agency FB, sans-serif' }}
-                  >
-                    <MessageSquare className="w-5 h-5" />
-                    Nous Contacter
-                  </button>
-                </div>
-              </div>
+          {/* Nav : bouton Mon Compte à droite */}
+          <nav className="relative z-20 flex justify-end px-4 sm:px-6 md:px-8 py-6 max-w-7xl mx-auto">
+            <button 
+              onClick={openLoginModal}
+              className="bg-[#f18f34] hover:bg-[#f9b131] text-white px-4 sm:px-6 py-2 rounded-full transition-colors text-sm sm:text-base md:text-lg"
+              style={{ fontFamily: 'Agency FB, sans-serif' }}
+            >
+              Mon Compte
+            </button>
+          </nav>
+
+        {/* Contenu central */}
+        <div className="relative z-10 flex flex-col items-center justify-center h-full text-center px-4 sm:px-6 md:px-8 mt-20 sm:mt-15 md:mt-25">
+          <h1 className="text-3xl sm:text-5xl md:text-7xl text-white mb-4 font-extrabold" style={{ fontFamily: 'Agency FB, sans-serif' }}>
+            Votre Bien-être à Domicile
+          </h1>
+          <p className="text-sm sm:text-lg md:text-xl text-white mb-6 max-w-2xl">
+            Découvrez nos services de massage, sport et soins du corps, 
+            directement chez vous pour un maximum de confort.
+          </p>
+          <div className="flex flex-col sm:flex-row gap-3 sm:gap-4">
+            <button 
+              onClick={() => setIsBookingOpen(true)}
+              className="bg-[#f9b131] hover:bg-[#fdc800] text-[#1d1d1b] px-6 sm:px-8 py-3 rounded-full flex items-center gap-2 transition-colors text-sm sm:text-base md:text-lg"
+              style={{ fontFamily: 'Agency FB, sans-serif' }}
+            >
+              <Calendar className="w-5 h-5" />
+              Prendre RDV
+            </button>
+            <button 
+              onClick={() => setIsContactOpen(true)}
+              className="bg-white/10 hover:bg-white/20 text-white px-6 sm:px-8 py-3 rounded-full flex items-center gap-2 backdrop-blur-sm transition-colors text-sm sm:text-base md:text-lg"
+              style={{ fontFamily: 'Agency FB, sans-serif' }}
+            >
+              <MessageSquare className="w-5 h-5" />
+              Nous Contacter
+            </button>
+          </div>
+        </div>
       </header>
-
       {/* Services Section */}
       <section className="py-20 px-6">
         <div className="max-w-7xl mx-auto">

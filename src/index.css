@@ -51,6 +51,15 @@ body {
   0% { transform: rotate(0deg); }
   100% { transform: rotate(360deg); }
 }
+          @keyframes slide {
+            0% {
+              transform: translateX(-100%) skewX(-29deg);
+            }
+            100% {
+              transform: translateX(200%) skewX(-29deg);
+            }
+          }
+
 
 /* Animation de bordure lumineuse */
 @keyframes border-glow {
@@ -85,7 +94,6 @@ body {
     border-color: #f18f34;
   }
 }
-
 .animate-border-pulse {
   animation: border-pulse 1.5s ease-in-out infinite;
 }
@@ -104,4 +112,5 @@ body {
 .animate-border-rainbow {
   animation: border-rainbow 3s linear infinite;
 }
+
 
