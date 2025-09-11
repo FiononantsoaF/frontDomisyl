@@ -1099,7 +1099,7 @@ function App() {
               <h3 className="text-xl font-semibold text-gray-800 mb-4" style={{ fontFamily: 'Agency FB' }}>
                 🧾 Mes Abonnements
               </h3>
-              <table className="min-w-full divide-y  text-sm text-700" >
+              <table className="min-w-full  divide-y  text-sm text-700" >
                 <thead className="bg-[#f18f34] text-white">
                   <tr>
                     <th className="px-6 py-3 text-left font-semibold">Formule</th>
@@ -1271,8 +1271,6 @@ function App() {
                               </span>
                             )}
                         </div>
-
-           
                       </div>
                       <div className="flex items-center text-gray-500 text-sm justify-between">
                         <div dangerouslySetInnerHTML={{ __html: type.description }} />
@@ -1317,9 +1315,9 @@ function App() {
         >
         <div className="absolute inset-0" />
         </div>
-          <div className="absolute top-8 left-1/5 transform -translate-x-1/2 z-30 overflow-hidden w-full px-4 sm:px-6">
+          <div className="absolute top-8 left-1/6 transform -translate-x-1/2 z-30  w-full h-full px-4 sm:px-6">
             <div
-              className="bg-[#f18f34] text-white text-center py-4 sm:py-6 shadow-2xl relative"
+              className="bg-[#f18f34] text-white text-2xl text-center py-5 sm:py-7 shadow-2xl relative"
               style={{
                 transform: 'rotate(-35deg)',
                 transformOrigin: 'center center',
@@ -1329,7 +1327,7 @@ function App() {
                 boxShadow: '0 0 20px rgba(0,0,0,0.3), inset 0 0 20px rgba(255,255,255,0.1)',
               }}
             >
-              <p className="font-extrabold text-base sm:text-lg md:text-xl leading-tight drop-shadow-lg">
+              <p className="font-extrabold text-base sm:text-lg md:text-2xl leading-tight drop-shadow-lg">
                 OFFRES SPÉCIALES LANCEMENT<br />
                 <span className="text-yellow-200 text-lg sm:text-xl md:text-2xl">-25%</span> sur toutes les prestations<br />
                 <span className="text-sm sm:text-base bg-black/30 px-2 py-1 rounded">
