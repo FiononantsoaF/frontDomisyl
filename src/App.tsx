@@ -23,6 +23,7 @@ import { Elements } from '@stripe/react-stripe-js';
 import PaiementStripe from './components/PaiementStripe';
 import AppointmentsTable from './components/AppointmentsTable';
 import { Tag, Sparkles } from "lucide-react";
+import { Link } from 'react-router-dom';
 import { ResponseVerification, BookingVerification, CrenVerification } from './api/serviceCategoryApi';
 
 const stripePromise = loadStripe('pk_test_51RmAH4PMG09tDqBqfeJKApH3F1NgBd6W7QWY0rZYBgPfqMPNVeocv9FLUYa9ErmbDx666zmtnBuGKE49c8mv7gh300sdjbSwdF');
@@ -561,6 +562,7 @@ function App() {
       );
       if (partialMatch) {
         setSelectedMassageType(partialMatch.id);
+
         console.log(`Service présélectionné (correspondance partielle): ${partialMatch.title}`);
       } else {
         console.warn('Aucune correspondance trouvée pour le service :', subscription.service);
@@ -613,7 +615,6 @@ function App() {
                       ) : (
                           <p className="text-2xl font-bold text-[#f18f34]">{paiement?.price} Ar</p>
                       )}
-
                     </div>
                   <div>
                     <label className="block text-sm font-medium text-gray-700 mb-1">
@@ -718,6 +719,9 @@ function App() {
               />
             </div>
             <div>
+              <Link to="/password" className="font-semibold underline">Mot de passe oublié ?</Link>
+            </div>
+            <div>
               <button
                 type="submit"
                 className="w-full bg-[#f9b131] hover:bg-[#f18f34] text-white px-4 py-3 rounded-full transition-colors flex items-center justify-center gap-2 disabled:opacity-50 disabled:cursor-not-allowed"
@@ -728,7 +732,6 @@ function App() {
               </button>
             </div>
           </div>
-
         </form>
       </div>
   );
@@ -1086,7 +1089,6 @@ function App() {
               >
                {userDetail?.name} ({userDetail?.phone} - {userDetail?.email})
               </button>
-
             </div>
           </div>
         </nav>
@@ -1099,7 +1101,7 @@ function App() {
               <h3 className="text-xl font-semibold text-gray-800 mb-4" style={{ fontFamily: 'Agency FB' }}>
                 🧾 Mes Abonnements
               </h3>
-              <table className="min-w-full divide-y  text-sm text-700" >
+              <table className="min-w-full  divide-y  text-sm text-700" >
                 <thead className="bg-[#f18f34] text-white">
                   <tr>
                     <th className="px-6 py-3 text-left font-semibold">Formule</th>
@@ -1200,8 +1202,9 @@ function App() {
       s => s.title.toLowerCase().trim() === selectedShowService.toLowerCase().trim()
     );
     console.log(service);
+
     if (!service) {
-      return <div>Service introuvable.</div>;
+         return <div>Service introuvable.</div>;
     }
     return (
       <div className="min-h-screen bg-white">
@@ -1271,8 +1274,6 @@ function App() {
                               </span>
                             )}
                         </div>
-
-           
                       </div>
                       <div className="flex items-center text-gray-500 text-sm justify-between">
                         <div dangerouslySetInnerHTML={{ __html: type.description }} />
@@ -1317,9 +1318,9 @@ function App() {
         >
         <div className="absolute inset-0" />
         </div>
-          <div className="absolute top-8 left-1/5 transform -translate-x-1/2 z-30 overflow-hidden w-full px-4 sm:px-6">
-            <div
-              className="bg-[#f18f34] text-white text-center py-4 sm:py-6 shadow-2xl relative"
+          <div className="absolute top-8 left-1/6 transform -translate-x-1/2 z-30  w-full h-full px-4 sm:px-6">
+            {/* <div
+              className="bg-[#f18f34] text-white text-2xl text-center py-5 sm:py-7 shadow-2xl relative"
               style={{
                 transform: 'rotate(-35deg)',
                 transformOrigin: 'center center',
@@ -1329,7 +1330,7 @@ function App() {
                 boxShadow: '0 0 20px rgba(0,0,0,0.3), inset 0 0 20px rgba(255,255,255,0.1)',
               }}
             >
-              <p className="font-extrabold text-base sm:text-lg md:text-xl leading-tight drop-shadow-lg">
+              <p className="font-extrabold text-base sm:text-lg md:text-2xl leading-tight drop-shadow-lg">
                 OFFRES SPÉCIALES LANCEMENT<br />
                 <span className="text-yellow-200 text-lg sm:text-xl md:text-2xl">-25%</span> sur toutes les prestations<br />
                 <span className="text-sm sm:text-base bg-black/30 px-2 py-1 rounded">
@@ -1337,7 +1338,7 @@ function App() {
                 </span>
               </p>
               <div className="absolute inset-0 bg-gradient-to-r from-transparent via-white/20 to-transparent -skew-x-12 animate-slide"></div>
-            </div>
+            </div> */}
           </div>
 
           {/* Nav : bouton Mon Compte à droite */}
@@ -1514,6 +1515,7 @@ function App() {
               </button>
             </div>
             {renderLoginForm()}
+            
           </Dialog.Panel>
         </div>
       </Dialog>

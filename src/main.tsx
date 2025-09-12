@@ -8,6 +8,8 @@ import Dashboard from './pages/Dashboard';
 import Clients from './pages/Clients';
 import Appointments from './pages/Appointments';
 import Services from './pages/Services';
+import Changepassword from './components/ChangePassword';
+
 import './index.css';
 
 const router = createBrowserRouter([
@@ -19,6 +21,11 @@ const router = createBrowserRouter([
     path: '*', 
     element: <Navigate to="/" replace />,
   },
+  {
+    path:'/password',
+    element: <Changepassword/>
+  }
+
   // {
   //   path: '/login',
   //   element: <Login />,
