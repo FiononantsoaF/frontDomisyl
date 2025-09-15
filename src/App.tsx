@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef  } from 'react';
 import DatePicker from "react-datepicker";
 import "react-datepicker/dist/react-datepicker.css";
 import { parseISO, isSameDay, min } from "date-fns";
@@ -24,6 +24,13 @@ import PaiementStripe from './components/PaiementStripe';
 import AppointmentsTable from './components/AppointmentsTable';
 import { Tag, Sparkles } from "lucide-react";
 import { Link } from 'react-router-dom';
+import { User as UserIcon } from 'lucide-react';
+
+import { Document, Page, pdfjs } from "react-pdf";
+
+// 🔑 Fix pour que ça marche sur mobile & desktop
+pdfjs.GlobalWorkerOptions.workerSrc = `//cdnjs.cloudflare.com/ajax/libs/pdf.js/${pdfjs.version}/pdf.worker.min.js`;
+
 import { ResponseVerification, BookingVerification, CrenVerification } from './api/serviceCategoryApi';
 
 const stripePromise = loadStripe('pk_test_51RmAH4PMG09tDqBqfeJKApH3F1NgBd6W7QWY0rZYBgPfqMPNVeocv9FLUYa9ErmbDx666zmtnBuGKE49c8mv7gh300sdjbSwdF');
@@ -48,6 +55,10 @@ function App() {
   const [isProcessingPayment, setIsProcessingPayment] = useState(false);
 
   const [availableCreneaux, setAvailableCreneaux] = useState<CrenVerification[]>([]);
+
+  const handleProfileClick = () => {
+      navigate('/profile-edit');
+  };
 
   const fetchCreneaux = async (employeeId: string, date: Date) => {
     if (!employeeId || !date) return;
@@ -123,8 +134,6 @@ function App() {
   useEffect(() => {
     if (selectedProviderId && selectedDate) {
 
-      console.log("ettoo verification",selectedProviderId);
-      console.log("ettoo verification",selectedDate);
       fetchCreneaux(selectedProviderId, selectedDate);
       setSelectedCreneauId(null); 
     }
@@ -185,22 +194,6 @@ function App() {
     }
   }, []);
 
-  // useEffect(() => {
-  //   servicesService.allappointments()
-  //     .then((data) => {     
-  //       setAppointmentsall(data.data);
-  //       const appointments = data.data;
-  //       const disable_date: Date[] = appointments.map((appointment) =>
-  //         parseISO(appointment.date_reserver)
-  //       );
-  //       setIsDisabled(disable_date);
-  //     })
-  //     .catch((error) => {useState({})
-  //       console.error('Erreur lors du chargement des rendez-vous:', error);
-  //       setAppointmentsall([]);
-  //       setIsDisabled([]);
-  //     });
-  // }, []);
 
   useEffect(() => {
   if (paiement !== null) {
@@ -212,6 +205,20 @@ function App() {
   const refreshPage = () => {
       navigate(0);
   }
+
+  const [cgvScrolledToEnd, setCgvScrolledToEnd] = useState(false);
+  const cgvRef = useRef<HTMLDivElement>(null);
+
+  const handleScroll = () => {
+    if (cgvRef.current) {
+      const { scrollTop, scrollHeight, clientHeight } = cgvRef.current;
+      if (scrollTop + clientHeight >= scrollHeight) {
+        setCgvScrolledToEnd(true);
+      }
+    }
+  };
+
+
   const resetBookingModal = () => {
     setFromSubscription(false);
     setSelectedSubId(null);
@@ -719,7 +726,7 @@ function App() {
               />
             </div>
             <div>
-              <Link to="/password" className="font-semibold underline">Mot de passe oublié ?</Link>
+              <Link to="/password_reset" className="font-semibold underline">Mot de passe oublié ?</Link>
             </div>
             <div>
               <button
@@ -869,48 +876,6 @@ function App() {
                   Aucun créneau disponible pour ce prestataire à cette date.
                 </p>
               )}
-
-            {/* {selectedProviderId && (() => {
-              const selectedProvider = employees.find(e => e.id.toString() === selectedProviderId);
-              return (
-                <div className="mt-4 p-4 border rounded-lg shadow bg-white">
-                  <h3 className="text-sm font-medium text-gray-700 mb-2">
-                    Créneaux disponibles
-                  </h3>
-
-                  {selectedProvider?.creneaux?.length ? (
-                    <div className="flex flex-wrap gap-2">
-                      {selectedProvider.creneaux
-                      .filter((value, index, self) =>
-                        index === self.findIndex((t) => (
-                          t.id === value.id 
-                        ))
-                      ).map((creneau: any) => (
-                        <button
-                          key={creneau.id}
-                          type="button"
-                          onClick={() => setSelectedCreneauId(creneau.id)}
-                          className={`px-2 py-1 rounded-md text-xs border transition  ${
-                            selectedCreneauId === creneau.id
-                              ? 'bg-[#f18f34] text-white border-[#f18f34]'
-                              : 'bg-gray-100 text-balck-300 border-gray-200'
-                          }`}
-                          disabled={!creneau.pivot?.is_active}
-                          title={creneau.pivot?.is_active ? 'Disponible' : 'Indisponible'}
-                          aria-required
-                        >
-                          {creneau.creneau}
-                        </button>
-                      ))}
-                    </div>
-                  ) : (
-                    <p className="text-xs text-gray-500">
-                      Aucun créneau disponible pour ce prestataire.
-                    </p>
-                  )}
-                </div>
-              );
-            })()} */}
           </div>
         )}
       </div>
@@ -1011,6 +976,7 @@ function App() {
         </div>
       </div>
 
+
       <div className="md:col-span-2">
         <label className="block text-sm font-medium text-gray-700 mb-1">
           Notes supplémentaires
@@ -1024,11 +990,35 @@ function App() {
           placeholder="Informations complémentaires pour votre réservation..."
         />
       </div>
+      <div className="md:col-span-2">
+        <label className="block font-medium mb-2">Conditions Générales de Vente (CGV)</label>
+        <div
+          ref={cgvRef}
+          onScroll={handleScroll}
+          className="border h-64 overflow-y-auto p-2"
+        >
+        <iframe
+            src='/CGV.pdf'
+            className="w-full h-[500px] md:h-[700px]"
+            style={{ border: "none" }}
+          />
+
+          <a
+          href="/CGV.pdf"
+          target="_blank"
+          rel="noopener noreferrer"
+          className="text-blue-600 underline mt-2 inline-block"
+        >
+          Ouvrir le PDF dans le navigateur
+        </a>
+        </div>
+      </div>
 
       <div className="md:col-span-2">
         <button
           type="submit"
-          disabled={loading}
+          // disabled={loading}
+          disabled={loading || !cgvScrolledToEnd}
           // disabled={isProcessingPayment}
           className="w-full bg-[#f9b131] hover:bg-[#f18f34] text-white px-4 py-3 rounded-full transition-colors flex items-center justify-center gap-2 disabled:opacity-50 disabled:cursor-not-allowed"
           style={{ fontFamily: 'Agency FB, sans-serif' }}
@@ -1081,19 +1071,27 @@ function App() {
               />
             )}
           </div>
-          <div className="flex items-center gap-4">
-            <div className="relative">
-              <button
-                className="bg-white  text-black px-6 py-2 rounded-full transition-colors"
-                style={{ fontFamily: 'Agency FB, sans-serif' }}
-              >
-               {userDetail?.name} ({userDetail?.phone} - {userDetail?.email})
-              </button>
-            </div>
-          </div>
+        <div className="flex items-center gap-3">
+          {/* Bouton infos utilisateur */}
+          {/* <button
+            title="Paramètre"
+            className="flex items-center gap-1 bg-black text-white px-4 sm:px-6 py-2 rounded-full transition-colors text-sm sm:text-base md:text-lg whitespace-nowrap"
+          >
+            <UserIcon className="w-5 h-5" /> 
+            <span className="hidden sm:inline">Paramètre</span>
+          </button> */}
+          <button
+            title="Voir profil"
+            onClick={handleProfileClick}
+            className="bg-white text-black px-4 py-1 rounded-full transition-colors whitespace-nowrap"
+            style={{ fontFamily: 'Agency FB, sans-serif' }}
+          >
+            {userDetail?.name} ({userDetail?.phone} - {userDetail?.email})
+          </button>
+        </div>
         </nav>
         <div className="max-w-7xl mx-auto">
-          <div className="grid grid-cols-1 md:grid-cols-1 gap-8">*
+          <div className="grid grid-cols-1 md:grid-cols-1 gap-8">
             {/* liste des rendez-vous */}
              <AppointmentsTable appointments={appointments} />
             {/* Liste des abonnements */}
@@ -1130,6 +1128,7 @@ function App() {
                     <td className="px-6 py-4 sticky right-0 bg-white z-10">
                       <button
                         onClick={() => {
+                          
                           setShowList(false);
                           setIsLoginOpen(false);
                           handleSubscriptionBooking(sub);
@@ -1312,8 +1311,9 @@ function App() {
       {/* Hero Section */}
       <header className="relative h-screen">
         {/* Image de fond */}
+        {/* bg-cover bg-center */}
         <div 
-          className="absolute inset-0 bg-cover bg-center"
+          className="absolute inset-0 bg-cover bg-center pointer-events-none"
           style={{ backgroundImage: `url(${back})`, backgroundPosition: 'center 15%' }}
         >
         <div className="absolute inset-0" />
@@ -1364,7 +1364,7 @@ function App() {
           <div className="flex flex-col sm:flex-row gap-3 sm:gap-4">
             <button 
               onClick={() => setIsBookingOpen(true)}
-              className="bg-[#f9b131] hover:bg-[#fdc800] text-[#1d1d1b] px-6 sm:px-8 py-3 rounded-full flex items-center gap-2 transition-colors text-sm sm:text-base md:text-lg"
+              className="bg-[#f9b131] hover:bg-[#fdc800] text-[#1d1d1b] z-20 px-6 sm:px-8 py-3 rounded-full flex items-center gap-2 transition-colors text-sm sm:text-base md:text-lg"
               style={{ fontFamily: 'Agency FB, sans-serif' }}
             >
               <Calendar className="w-5 h-5" />
