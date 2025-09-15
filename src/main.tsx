@@ -9,7 +9,8 @@ import Clients from './pages/Clients';
 import Appointments from './pages/Appointments';
 import Services from './pages/Services';
 import Changepassword from './components/ChangePassword';
-
+import RequestPasswordReset from './components/RequestPasswordReset';
+import ProfileEdit from './components/ProfilEdit';
 import './index.css';
 
 const router = createBrowserRouter([
@@ -22,10 +23,17 @@ const router = createBrowserRouter([
     element: <Navigate to="/" replace />,
   },
   {
-    path:'/password',
-    element: <Changepassword/>
-  }
-
+  path:'/password-reset/:token',
+     element: <Changepassword/>
+  },
+  {
+    path:'/password_reset',
+    element: <RequestPasswordReset/>
+  },
+  {
+    path:'/profile-edit',
+    element: <ProfileEdit/>
+  },
   // {
   //   path: '/login',
   //   element: <Login />,
