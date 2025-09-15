@@ -995,15 +995,15 @@ function App() {
         <div
           ref={cgvRef}
           onScroll={handleScroll}
-          className="border h-64 overflow-y-auto p-2"
+          className="border h-64 overflow-y-none p-2"
         >
         <iframe
-            src='/CGV.pdf'
+            src='/CGV.html'
             className="w-full h-[500px] md:h-[700px]"
             style={{ border: "none" }}
           />
 
-          <a
+        <a
           href="/CGV.pdf"
           target="_blank"
           rel="noopener noreferrer"
