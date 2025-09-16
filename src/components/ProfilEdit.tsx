@@ -1,14 +1,19 @@
-import React, { useState, useEffect } from 'react';
+import React, { useContext ,useState, useEffect } from 'react';
 import { useNavigate, Link } from 'react-router-dom';
 import API from '../api/axios'; 
 import { User } from '../api/serviceCategoryApi';
-import { servicesService } from '../api/serviceCategoryApi'; 
+import { servicesService } from '../api/serviceCategoryApi';
+import { UserContext } from './UserContext';
+ 
 
 
 const ProfileEdit: React.FC = () => {
   const navigate = useNavigate();
   const [addressError, setAddressError] = useState<string | null>(null);
   const [emailError, setEmailError] = useState<string | null>(null);
+  const [phoneError, setPhoneError] = useState<string | null>(null);
+
+  const { setUser } = useContext(UserContext);
 
   const [userDetail, setUserDetail] = useState<User | null>(null);
   const [formData, setFormData] = useState({
@@ -65,6 +70,7 @@ const handleInputChange = async (e: React.ChangeEvent<HTMLInputElement | HTMLTex
               setAddressError(null);
             }
       }
+
       if(name === "email"){
         const erreuremail = await servicesService.checkEmailFormat(value);
         if(!erreuremail){
@@ -73,29 +79,41 @@ const handleInputChange = async (e: React.ChangeEvent<HTMLInputElement | HTMLTex
             setEmailError(null);
         }
       }
+
+      if(name === "phone"){
+        const erreurPhone = await servicesService.checkPhoneNumber(value);
+        if(!erreurPhone){
+           setPhoneError("Veuillez vérifier votre numero!");
+        } else {
+          setPhoneError(null);
+        }
+      }
     };
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setLoading(true);
-
     if(addressError != null){
       alert("Veuillez saisir une adresse valide");
+      setLoading(false);
       return;
     }
-    
     if(emailError != null) {
         alert("Veuillez saisir un email valide");
+        setLoading(false);
+        return;
+    }
+    if(phoneError != null){
+        alert(phoneError);
+        setLoading(false);
         return;
     }
     try {
-       const user = await API.post('/user/update', formData);
-       console.log(user);
+       const response = await API.post('/user/update', formData);
+       const updatedUser: User = response.data.data;
         alert('Profil mis à jour avec succès !');
-
+        localStorage.setItem('user', JSON.stringify(updatedUser));
         navigate('/');
-
-        // localStorage.setItem('user', JSON.stringify(updatedUser));
     } catch (err: any) {
       console.error(err);
       alert('Erreur lors de la mise à jour : ' + (err.response?.data?.message || err.message));
@@ -159,7 +177,7 @@ const handleInputChange = async (e: React.ChangeEvent<HTMLInputElement | HTMLTex
           />
         </div>
         <div>
-          <label className="block text-sm font-medium text-gray-700">Email</label>
+          <label className="block text-sm font-medium text-gray-700">Adresse</label>
           <input
             type="address"
             name="address"
