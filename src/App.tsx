@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useRef  } from 'react';
+import React, { useState, useContext, useEffect, useRef  } from 'react';
 import DatePicker from "react-datepicker";
 import "react-datepicker/dist/react-datepicker.css";
 import { parseISO, isSameDay, min } from "date-fns";
@@ -25,15 +25,16 @@ import AppointmentsTable from './components/AppointmentsTable';
 import { Tag, Sparkles } from "lucide-react";
 import { Link } from 'react-router-dom';
 import { User as UserIcon } from 'lucide-react';
+import { UserContext } from './components/UserContext';
 
 import { Document, Page, pdfjs } from "react-pdf";
 
-// 🔑 Fix pour que ça marche sur mobile & desktop
 pdfjs.GlobalWorkerOptions.workerSrc = `//cdnjs.cloudflare.com/ajax/libs/pdf.js/${pdfjs.version}/pdf.worker.min.js`;
 
 import { ResponseVerification, BookingVerification, CrenVerification } from './api/serviceCategoryApi';
 
 const stripePromise = loadStripe('pk_test_51RmAH4PMG09tDqBqfeJKApH3F1NgBd6W7QWY0rZYBgPfqMPNVeocv9FLUYa9ErmbDx666zmtnBuGKE49c8mv7gh300sdjbSwdF');
+
 
 function App() {
   const [isBookingOpen, setIsBookingOpen] = useState(false);
@@ -55,10 +56,19 @@ function App() {
   const [isProcessingPayment, setIsProcessingPayment] = useState(false);
 
   const [availableCreneaux, setAvailableCreneaux] = useState<CrenVerification[]>([]);
+  const [acceptedCGV, setAcceptedCGV] = useState(false);
+
+  const [acceptedRGC, setAcceptedRGC] = useState(false);
+
+  const [cgvHtml, setCgvHtml] = useState("");
+  const [rgcHtml, setRgcHtml] = useState("");
+
 
   const handleProfileClick = () => {
       navigate('/profile-edit');
   };
+
+
 
   const fetchCreneaux = async (employeeId: string, date: Date) => {
     if (!employeeId || !date) return;
@@ -144,25 +154,25 @@ function App() {
   }, [showList]);
 
   useEffect(() => {
-  if (showList) {
-    const userdetail = getUser();
-    setuserDetail(userdetail);
-    if (userdetail) {
-      servicesService.appointandsub()
-        .then((response) => {
-          setAppointments(response.appointments);
-          setSubscriptions(response.subscriptions);
+    if (showList) {
+      const userdetail = getUser();
+      setuserDetail(userdetail);
+      if (userdetail) {
+        servicesService.appointandsub()
+          .then((response) => {
+            setAppointments(response.appointments);
+            setSubscriptions(response.subscriptions);
+          })
+          .catch((err) => console.error(err));
+      }
+      servicesService.all()
+        .then((data) => {
+          setServices(data.services);
+          setEmployee(data.prestataires);
         })
         .catch((err) => console.error(err));
     }
-    servicesService.all()
-      .then((data) => {
-        setServices(data.services);
-        setEmployee(data.prestataires);
-      })
-      .catch((err) => console.error(err));
-  }
-}, [showList]);
+  }, [showList]);
 
 
   useEffect(() => {
@@ -206,14 +216,38 @@ function App() {
       navigate(0);
   }
 
+  useEffect(() => {
+    fetch("/CGV.html")
+      .then((res) => res.text())
+      .then((data) => setCgvHtml(data));
+  }, []);
+
+  useEffect(() => {
+    fetch("/RGC.html")
+      .then((res) => res.text())
+      .then((data) => setRgcHtml(data));
+  }, []);
+
+  const [rgcScrolledToEnd, setRgcScrolledToEnd] = useState(false);
+  const rgcRef = useRef<HTMLDivElement>(null);;
+
   const [cgvScrolledToEnd, setCgvScrolledToEnd] = useState(false);
   const cgvRef = useRef<HTMLDivElement>(null);
 
   const handleScroll = () => {
+    if (rgcRef.current) {
+      const { scrollTop, scrollHeight, clientHeight } = rgcRef.current;
+      if (scrollTop + clientHeight >= scrollHeight) {
+        setRgcScrolledToEnd(true);
+      }
+    }
+  };
+
+  const handleScrollcgv = () => {
     if (cgvRef.current) {
       const { scrollTop, scrollHeight, clientHeight } = cgvRef.current;
       if (scrollTop + clientHeight >= scrollHeight) {
-        setCgvScrolledToEnd(true);
+          setCgvScrolledToEnd(true);
       }
     }
   };
@@ -453,7 +487,8 @@ function App() {
     }
     setIsLoginOpen(true);
   };  
-
+  const { user } = useContext(UserContext);
+  
   const getUser = (): User | null => {
     const data = localStorage.getItem('user');
     return data ? JSON.parse(data) as User : null;
@@ -559,6 +594,7 @@ function App() {
     );
 
     if (exactMatch) {
+
       setSelectedMassageType(exactMatch.id);
       console.log(`Service présélectionné (correspondance exacte): ${exactMatch.title}`);
     } else {
@@ -580,49 +616,82 @@ function App() {
 
   if(showPaymentChoice){
     return (
-      <div className="text-center" style={{ fontFamily: 'Agency FB, sans-serif' }}>
+      <div className="text-center">
         {showPaymentChoice && !selectedMethod && (
           <div className="max-w-md mx-auto px-4 py-8">
-              <div className="bg-white rounded-xl shadow-md overflow-hidden p-6">
-                <h2 className="text-2xl font-bold text-gray-800 mb-6 pb-2 border-b border-gray-100">Choisissez votre méthode de paiement</h2>
+            <div className="bg-white rounded-xl shadow-md overflow-hidden p-6">
+              <h2 className="text-2xl font-bold text-gray-800 mb-6 pb-2 border-b border-gray-100">
+                Choisissez votre méthode de paiement
+              </h2>
+              <div
+                ref={cgvRef}
+                onScroll={handleScrollcgv}
+                className="border h-64 overflow-y-auto p-2 mb-4"
+                dangerouslySetInnerHTML={{ __html: cgvHtml }}
+              />
+              {cgvScrolledToEnd && (
+                <div className="flex items-center mb-4">
+                  <input
+                    type="checkbox"
+                    id="cgv"
+                    checked={acceptedCGV}
+                    onChange={(e) => setAcceptedCGV(e.target.checked)}
+                    className="mr-2 w-4 h-4 accent-[#f18f34]"
+                  />
+                  <label htmlFor="cgv" className="text-gray-700 text-sm">
+                    J'accepte les <a href="/CGV.pdf" className="text-[#f18f34] underline">CGV</a>
+                  </label>
+                </div>
+              )}
+
+              {acceptedCGV && (
                 <div className="flex flex-col md:flex-row gap-4 justify-center mt-4">
                   <button
                     onClick={() => setSelectedMethod('mvola')}
                     className="flex-1 bg-gradient-to-r from-[#f9b131] to-[#f18f34] hover:from-[#f18f34] hover:to-[#f9b131] text-dark px-4 py-3.5 rounded-lg transition-all flex items-center justify-center gap-2 disabled:opacity-50 disabled:cursor-not-allowed font-bold shadow-md hover:shadow-lg"
                   >
-                   Payer par MVola
+                    Payer par MVola
                   </button>
+
+                  {/* Bouton Stripe commenté */}
                   {/* <button
                     onClick={() => setSelectedMethod('stripe')}
                     className="flex-1 bg-gradient-to-r from-[#f9b131] to-[#f18f34] hover:from-[#f18f34] hover:to-[#f9b131] text-dark px-4 py-3.5 rounded-lg transition-all flex items-center justify-center gap-2 disabled:opacity-50 disabled:cursor-not-allowed font-bold shadow-md hover:shadow-lg"
                   >
                     Payer par Carte (Stripe)
                   </button> */}
+                  <button
+                    className="flex-1 bg-gradient-to-r from-[#f9b131] to-[#f18f34] hover:from-[#f18f34] hover:to-[#f9b131] text-dark px-4 py-3.5 rounded-lg transition-all flex items-center justify-center gap-2 disabled:opacity-50 disabled:cursor-not-allowed font-bold shadow-md hover:shadow-lg"
+                  >
+                    Payer par Orange Money
+                  </button>
                 </div>
- 
-              </div>
+              )}
+            </div>
           </div>
         )}
 
+        {/* Vue paiement MVola */}
         {selectedMethod === 'mvola' && (
-          <div className="min-h-screen bg-gray-50" >
-            <div className="bg-gray-50 px-4 py-2 text-sm text-gray-700 flex items-center justify-between">
-            </div>
+          <div className="min-h-screen bg-gray-50">
+            <div className="bg-gray-50 px-4 py-2 text-sm text-gray-700 flex items-center justify-between"></div>
             <div className="max-w-md mx-auto px-4 py-8">
               <div className="bg-white rounded-xl shadow-md overflow-hidden p-6">
                 <h2 className="text-2xl font-bold text-gray-800 mb-6 pb-2 border-b border-gray-100">Paiement MVola</h2>
                 <form onSubmit={handlePaiement} className="space-y-4">
-                    <div className="flex items-center justify-between bg-orange-50 p-4 rounded-lg border border-orange-100 mb-4">
-                      <p className="text-sm font-medium text-gray-600">Total à payer</p>
-                      {paiement?.price_promo ? (
-                        <>
-                          <p className="text-lg line-through text-gray-400">{paiement?.price} Ar</p>
-                          <p className="text-2xl font-bold text-[#f18f34]">{paiement?.price_promo} Ar</p>
-                        </>
-                      ) : (
-                          <p className="text-2xl font-bold text-[#f18f34]">{paiement?.price} Ar</p>
-                      )}
-                    </div>
+                  <div className="flex items-center justify-between bg-orange-50 p-4 rounded-lg border border-orange-100 mb-4">
+                    <p className="text-sm font-medium text-gray-600">Total à payer</p>
+                    {paiement?.price_promo ? (
+                      <>
+                        <p className="text-lg line-through text-gray-400">{paiement?.price} Ar</p>
+                        <p className="text-2xl font-bold text-[#f18f34]">{paiement?.price_promo} Ar</p>
+                      </>
+                    ) : (
+                      <p className="text-2xl font-bold text-[#f18f34]">{paiement?.price} Ar</p>
+                    )}
+                  </div>
+
+                  {/* Champ numéro de téléphone */}
                   <div>
                     <label className="block text-sm font-medium text-gray-700 mb-1">
                       Numéro (034 ou 038 seulement)
@@ -641,20 +710,11 @@ function App() {
                       />
                     </div>
                   </div>
-                  <div>
-                    <input
-                      type="number"
-                      name="amount"
-                      value={paiementData.amount}
-                      onChange={handlePaiementDataChange}
-                      min={paiementData.amount}
-                      readOnly
-                      className="w-full rounded-md border border-gray-300 px-3 py-2.5 focus:outline-none focus:ring-2 focus:ring-[#f18f34] focus:border-transparent"
-                      required
-                    />
-                  </div>
+
+                  <input type="number" name="amount" value={paiementData.amount} readOnly className="hidden" />
                   <input type="hidden" name="subscription_id" value={paiementData.subscription_id} />
                   <input type="hidden" name="appointment_id" value={paiementData.appointment_id} />
+
                   <button
                     type="submit"
                     disabled={loadingpay}
@@ -662,10 +722,7 @@ function App() {
                   >
                     <span>Payer maintenant</span>
                     {loadingpay && (
-                      <>
-                        <span className="inline-block w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin"></span>
-                        Traitement paiement en cours...
-                      </>
+                      <span className="inline-block w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin ml-2"></span>
                     )}
                   </button>
                 </form>
@@ -674,6 +731,7 @@ function App() {
           </div>
         )}
 
+        {/* Vue Stripe */}
         {selectedMethod === 'stripe' && (
           <Elements stripe={stripePromise}>
             <PaiementStripe
@@ -990,35 +1048,25 @@ function App() {
           placeholder="Informations complémentaires pour votre réservation..."
         />
       </div>
-      <div className="md:col-span-2">
-        <label className="block font-medium mb-2">Conditions Générales de Vente (CGV)</label>
-        <div
-          ref={cgvRef}
-          onScroll={handleScroll}
-          className="border h-64 overflow-y-none p-2"
-        >
-        <iframe
-            src='/CGV.html'
-            className="w-full h-[500px] md:h-[700px]"
-            style={{ border: "none" }}
-          />
+    <div className="md:col-span-2">
+        <label className="block text-sm font-medium text-gray-700 mb-1">
+          REGLEMENT CLIENTS-DOMISYL
+        </label>
 
-        <a
-          href="/CGV.pdf"
-          target="_blank"
-          rel="noopener noreferrer"
-          className="text-blue-600 underline mt-2 inline-block"
-        >
-          Ouvrir le PDF dans le navigateur
-        </a>
-        </div>
-      </div>
+      <div
+        ref={rgcRef}
+        onScroll={handleScroll}
+        className="border h-64 overflow-y-auto p-2"
+        dangerouslySetInnerHTML={{ __html: rgcHtml }}
+      />
+    </div>
+
 
       <div className="md:col-span-2">
         <button
           type="submit"
           // disabled={loading}
-          disabled={loading || !cgvScrolledToEnd}
+          disabled={loading || !rgcScrolledToEnd}
           // disabled={isProcessingPayment}
           className="w-full bg-[#f9b131] hover:bg-[#f18f34] text-white px-4 py-3 rounded-full transition-colors flex items-center justify-center gap-2 disabled:opacity-50 disabled:cursor-not-allowed"
           style={{ fontFamily: 'Agency FB, sans-serif' }}
@@ -1052,13 +1100,24 @@ function App() {
           >
             ← Retour à l'accueil
           </button>
-          <button
-            onClick={handleLogout}
-            className="bg-[#f18f34] hover:bg-[#f9b131] text-white px-6 py-2 rounded-full transition-colors"
-            style={{ fontFamily: 'Agency FB, sans-serif' }}
-          >
-            Déconnexion
-          </button>
+          <div className="flex items-center gap-2">
+            <select
+              defaultValue=""
+              onChange={(e) => {
+                if (e.target.value === "profile") handleProfileClick();
+                else if (e.target.value === "logout") handleLogout();
+                e.target.value = "";
+              }}
+              className="bg-white text-dark px-4 py-2 rounded-full text-sm sm:text-base md:text-lg cursor-pointer focus:outline-none"
+              style={{ fontFamily: "Agency FB, sans-serif" }}
+            >
+              <option value="" disabled>👤 Mon compte</option>
+              <option value="profile">Voir profil</option>
+              <option value="logout">Déconnexion</option>
+            </select>
+          </div>
+
+
         </div>
 
         <nav className="relative z-10 flex items-center justify-between px-6 py-4 max-w-7xl mx-auto">
@@ -1073,16 +1132,8 @@ function App() {
           </div>
         <div className="flex items-center gap-3">
           {/* Bouton infos utilisateur */}
-          {/* <button
-            title="Paramètre"
-            className="flex items-center gap-1 bg-black text-white px-4 sm:px-6 py-2 rounded-full transition-colors text-sm sm:text-base md:text-lg whitespace-nowrap"
-          >
-            <UserIcon className="w-5 h-5" /> 
-            <span className="hidden sm:inline">Paramètre</span>
-          </button> */}
+
           <button
-            title="Voir profil"
-            onClick={handleProfileClick}
             className="bg-white text-black px-4 py-1 rounded-full transition-colors whitespace-nowrap"
             style={{ fontFamily: 'Agency FB, sans-serif' }}
           >

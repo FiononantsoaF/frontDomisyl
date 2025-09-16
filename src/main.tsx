@@ -34,6 +34,7 @@ const router = createBrowserRouter([
     path:'/profile-edit',
     element: <ProfileEdit/>
   },
+  
   // {
   //   path: '/login',
   //   element: <Login />,

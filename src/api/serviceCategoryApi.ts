@@ -318,7 +318,14 @@ export const servicesService = {
   checkEmailFormat: async (email: string): Promise<boolean> => {
     const regex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
     return regex.test(email.trim());
+  },
+  checkPhoneNumber: async (phone: string): Promise<boolean> => {
+    const cleaned = phone.replace(/\D/g, '');
+    if (cleaned.length !== 10) return false;
+    const prefixes = ['034', '038', '037', '032', '033'];
+    return prefixes.some(prefix => cleaned.startsWith(prefix));
   }
+
 
 
 };
