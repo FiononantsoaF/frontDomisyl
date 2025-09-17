@@ -26,6 +26,7 @@ import { Tag, Sparkles } from "lucide-react";
 import { Link } from 'react-router-dom';
 import { User as UserIcon } from 'lucide-react';
 import { UserContext } from './components/UserContext';
+import PromoBanner from './components/Promo';
 
 import { Document, Page, pdfjs } from "react-pdf";
 
@@ -58,17 +59,18 @@ function App() {
   const [availableCreneaux, setAvailableCreneaux] = useState<CrenVerification[]>([]);
   const [acceptedCGV, setAcceptedCGV] = useState(false);
 
-  const [acceptedRGC, setAcceptedRGC] = useState(false);
+  const [rgcScrolledToEnd, setRgcScrolledToEnd] = useState(false);
+  const [cgvScrolledToEnd, setCgvScrolledToEnd] = useState(false);
+  const rgcRef = useRef<HTMLDivElement>(null);
+  const cgvRef = useRef<HTMLDivElement>(null);
 
-  const [cgvHtml, setCgvHtml] = useState("");
-  const [rgcHtml, setRgcHtml] = useState("");
+  const [cgvHtml, setCgvHtml] = useState('');
+  const [rgcHtml, setRgcHtml] = useState('');
 
 
   const handleProfileClick = () => {
       navigate('/profile-edit');
   };
-
-
 
   const fetchCreneaux = async (employeeId: string, date: Date) => {
     if (!employeeId || !date) return;
@@ -216,41 +218,40 @@ function App() {
       navigate(0);
   }
 
-  useEffect(() => {
-    fetch("/CGV.html")
-      .then((res) => res.text())
-      .then((data) => setCgvHtml(data));
-  }, []);
+useEffect(() => {
+  fetch("/CGV.html")
+    .then((res) => res.text())
+    .then((data) => setCgvHtml(data))
+    .catch((error) => console.error('Erreur lors du chargement CGV:', error));
+}, []);
 
-  useEffect(() => {
-    fetch("/RGC.html")
-      .then((res) => res.text())
-      .then((data) => setRgcHtml(data));
-  }, []);
+useEffect(() => {
+  fetch("/RGC.html")
+    .then((res) => res.text())
+    .then((data) => setRgcHtml(data))
+    .catch((error) => console.error('Erreur lors du chargement RGC:', error));
+}, []);
 
-  const [rgcScrolledToEnd, setRgcScrolledToEnd] = useState(false);
-  const rgcRef = useRef<HTMLDivElement>(null);;
-
-  const [cgvScrolledToEnd, setCgvScrolledToEnd] = useState(false);
-  const cgvRef = useRef<HTMLDivElement>(null);
-
-  const handleScroll = () => {
-    if (rgcRef.current) {
-      const { scrollTop, scrollHeight, clientHeight } = rgcRef.current;
-      if (scrollTop + clientHeight >= scrollHeight) {
-        setRgcScrolledToEnd(true);
-      }
+// Fonctions de gestion du scroll
+const handleRgcScroll = () => {
+  if (rgcRef.current) {
+    const { scrollTop, scrollHeight, clientHeight } = rgcRef.current;
+    if (scrollTop + clientHeight >= scrollHeight - 1) { // -1 pour éviter les problèmes de précision
+      console.log("RGC scrolled to end");
+      setRgcScrolledToEnd(true);
     }
-  };
+  }
+};
 
-  const handleScrollcgv = () => {
-    if (cgvRef.current) {
-      const { scrollTop, scrollHeight, clientHeight } = cgvRef.current;
-      if (scrollTop + clientHeight >= scrollHeight) {
-          setCgvScrolledToEnd(true);
-      }
+const handleCgvScroll = () => {
+  if (cgvRef.current) {
+    const { scrollTop, scrollHeight, clientHeight } = cgvRef.current;
+    if (scrollTop + clientHeight >= scrollHeight - 1) { // -1 pour éviter les problèmes de précision
+      console.log("CGV scrolled to end");
+      setCgvScrolledToEnd(true);
     }
-  };
+  }
+};
 
 
   const resetBookingModal = () => {
@@ -621,36 +622,34 @@ function App() {
           <div className="max-w-md mx-auto px-4 py-8">
             <div className="bg-white rounded-xl shadow-md overflow-hidden p-6">
               <h2 className="text-2xl font-bold text-gray-800 mb-6 pb-2 border-b border-gray-100">
-                Choisissez votre méthode de paiement
+                Méthode de paiement
               </h2>
               <div
                 ref={cgvRef}
-                onScroll={handleScrollcgv}
+                onScroll={handleCgvScroll}
                 className="border h-64 overflow-y-auto p-2 mb-4"
                 dangerouslySetInnerHTML={{ __html: cgvHtml }}
               />
-              {cgvScrolledToEnd && (
-                <div className="flex items-center mb-4">
-                  <input
-                    type="checkbox"
-                    id="cgv"
-                    checked={acceptedCGV}
-                    onChange={(e) => setAcceptedCGV(e.target.checked)}
-                    className="mr-2 w-4 h-4 accent-[#f18f34]"
-                  />
-                  <label htmlFor="cgv" className="text-gray-700 text-sm">
-                    J'accepte les <a href="/CGV.pdf" className="text-[#f18f34] underline">CGV</a>
-                  </label>
-                </div>
-              )}
+              <div className="flex items-center mb-4">
+                <input
+                  type="checkbox"
+                  id="cgv"
+                  checked={acceptedCGV}
+                  onChange={(e) => setAcceptedCGV(e.target.checked)}
+                  className="mr-2 w-4 h-4 accent-[#f18f34]"
+                />
+                <label htmlFor="cgv" className="text-gray-700 text-sm">
+                  J'accepte les <a href="/CGV.pdf" className="text-[#f18f34] underline">CGV</a>
+                </label>
+              </div>
 
-              {acceptedCGV && (
                 <div className="flex flex-col md:flex-row gap-4 justify-center mt-4">
                   <button
                     onClick={() => setSelectedMethod('mvola')}
+                    disabled={!acceptedCGV}
                     className="flex-1 bg-gradient-to-r from-[#f9b131] to-[#f18f34] hover:from-[#f18f34] hover:to-[#f9b131] text-dark px-4 py-3.5 rounded-lg transition-all flex items-center justify-center gap-2 disabled:opacity-50 disabled:cursor-not-allowed font-bold shadow-md hover:shadow-lg"
                   >
-                    Payer par MVola
+                    MVola
                   </button>
 
                   {/* Bouton Stripe commenté */}
@@ -660,13 +659,13 @@ function App() {
                   >
                     Payer par Carte (Stripe)
                   </button> */}
-                  <button
+                  {/* <button
+                    disabled={!acceptedCGV}
                     className="flex-1 bg-gradient-to-r from-[#f9b131] to-[#f18f34] hover:from-[#f18f34] hover:to-[#f9b131] text-dark px-4 py-3.5 rounded-lg transition-all flex items-center justify-center gap-2 disabled:opacity-50 disabled:cursor-not-allowed font-bold shadow-md hover:shadow-lg"
                   >
-                    Payer par Orange Money
-                  </button>
+                    Orange Money
+                  </button> */}
                 </div>
-              )}
             </div>
           </div>
         )}
@@ -1055,12 +1054,11 @@ function App() {
 
       <div
         ref={rgcRef}
-        onScroll={handleScroll}
+        onScroll={handleRgcScroll}
         className="border h-64 overflow-y-auto p-2"
         dangerouslySetInnerHTML={{ __html: rgcHtml }}
       />
     </div>
-
 
       <div className="md:col-span-2">
         <button
@@ -1364,33 +1362,24 @@ function App() {
         {/* Image de fond */}
         {/* bg-cover bg-center */}
         <div 
-          className="absolute inset-0 bg-cover bg-center pointer-events-none"
+          className="absolute inset-0 bg-cover bg-center"
           style={{ backgroundImage: `url(${back})`, backgroundPosition: 'center 15%' }}
         >
-        <div className="absolute inset-0" />
+            <div className="absolute inset-0 bg-black/20" />
         </div>
-          <div className="absolute top-8 left-1/6 transform -translate-x-1/2 z-30  w-full h-full px-4 sm:px-6">
-            {/* <div
-              className="bg-[#f18f34] text-white text-2xl text-center py-5 sm:py-7 shadow-2xl relative"
-              style={{
-                transform: 'rotate(-35deg)',
-                transformOrigin: 'center center',
-                width: '120%',
-                maxWidth: '1600px',
-                fontFamily: 'Agency FB, sans-serif',
-                boxShadow: '0 0 20px rgba(0,0,0,0.3), inset 0 0 20px rgba(255,255,255,0.1)',
-              }}
-            >
-              <p className="font-extrabold text-base sm:text-lg md:text-2xl leading-tight drop-shadow-lg">
-                OFFRES SPÉCIALES LANCEMENT<br />
-                <span className="text-yellow-200 text-lg sm:text-xl md:text-2xl">-25%</span> sur toutes les prestations<br />
-                <span className="text-sm sm:text-base bg-black/30 px-2 py-1 rounded">
-                  du 20/09 au 20/10/2025
-                </span>
-              </p>
-              <div className="absolute inset-0 bg-gradient-to-r from-transparent via-white/20 to-transparent -skew-x-12 animate-slide"></div>
-            </div> */}
-          </div>
+        <PromoBanner></PromoBanner>
+    
+          {/* <div className="absolute  bg-[#f18f34] top-4 w-full overflow-hidden">
+            <div className="flex animate-marquee-right whitespace-nowrap text-2xl  text-white sm:text-3xl md:text-4xl font-extrabold gap-16">
+              <span >🎉 Offres promotionnelles :</span>
+              <span >-20% sur tous nos massages !</span>
+              <span >Réservez maintenant et bénéficiez de cadeaux exclusifs ! 🎁</span>
+
+              <span>🎉 Offres promotionnelles :</span>
+              <span >-20% sur tous nos massages !</span>
+              <span>Réservez maintenant et bénéficiez de cadeaux exclusifs ! 🎁</span>
+            </div>
+          </div> */}
 
           {/* Nav : bouton Mon Compte à droite */}
           <nav className="relative z-20 flex justify-end px-4 sm:px-6 md:px-8 py-6 max-w-7xl mx-auto">
@@ -1416,7 +1405,10 @@ function App() {
             <button 
               onClick={() => setIsBookingOpen(true)}
               className="bg-[#f9b131] hover:bg-[#fdc800] text-[#1d1d1b] z-20 px-6 sm:px-8 py-3 rounded-full flex items-center gap-2 transition-colors text-sm sm:text-base md:text-lg"
-              style={{ fontFamily: 'Agency FB, sans-serif' }}
+              style={{ fontFamily: 'Agency FB, sans-serif',
+                 pointerEvents: 'auto'
+               }}
+              
             >
               <Calendar className="w-5 h-5" />
               Prendre RDV
@@ -1445,7 +1437,7 @@ function App() {
             {services.map((service, index) => (
               <div 
                 key={index} 
-                className="bg-white rounded-xl overflow-hidden shadow-lg hover:shadow-xl transition-shadow"
+                className="bg-white rounded-xl shadow-lg hover:shadow-xl transition-shadow"
               >
               <div className="p-6">
                   <div className="flex items-center gap-3 mb-4">
@@ -1460,7 +1452,7 @@ function App() {
                     { service.description}
                   </p>
                 </div>
-                <div className="h-48 overflow-hidden">
+                <div className="h-48 ">
                   <img 
                     src={service.image} 
                     alt={service.title}
@@ -1529,7 +1521,7 @@ function App() {
         <div className="fixed inset-0 bg-black/30" aria-hidden="true" />
         
         <div className="fixed inset-0 flex items-center justify-center p-4">
-          <Dialog.Panel className="w-full max-w-2xl transform overflow-hidden rounded-2xl bg-white p-6 text-left align-middle shadow-xl transition-all">
+          <Dialog.Panel className="w-full max-w-2xl transform  rounded-2xl bg-white p-6 text-left align-middle shadow-xl transition-all">
             <div className="flex justify-between items-center mb-6">
               <Dialog.Title
                 className="text-2xl font-medium text-gray-900"
@@ -1580,7 +1572,7 @@ function App() {
         <div className="fixed inset-0 bg-black/30" aria-hidden="true" />
         
         <div className="fixed inset-0 flex items-center justify-center p-4">
-          <Dialog.Panel className="w-full max-w-md transform overflow-hidden rounded-2xl bg-white p-6 text-left align-middle shadow-xl transition-all">
+          <Dialog.Panel className="w-full max-w-md transform  rounded-2xl bg-white p-6 text-left align-middle shadow-xl transition-all">
             <div className="flex justify-between items-center mb-6">
               <Dialog.Title
                 className="text-2xl font-medium text-gray-900"
