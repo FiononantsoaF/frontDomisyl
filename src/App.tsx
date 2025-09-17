@@ -639,7 +639,7 @@ const handleCgvScroll = () => {
                   className="mr-2 w-4 h-4 accent-[#f18f34]"
                 />
                 <label htmlFor="cgv" className="text-gray-700 text-sm">
-                  J'accepte les <a href="/CGV.pdf" className="text-[#f18f34] underline">CGV</a>
+                  J'accepte les <a href="/CGV.pdf" className="text-[#f18f34] underline">conditions générales de vente</a>
                 </label>
               </div>
 
@@ -801,6 +801,7 @@ const handleCgvScroll = () => {
   );
 
   const renderBookingForm = () => (
+    
     <div className="max-h-[80vh] overflow-y-auto px-4">
     <form 
         onSubmit={handleBooking} 
@@ -881,14 +882,21 @@ const handleCgvScroll = () => {
             }
           />
         </div>
-        {selectedService && (
+        {selectedService && selectedMassageType   && (
           <div>
             <label className="block text-sm font-medium text-gray-700 mb-2">
               Sélectionnez un prestataire *
             </label>
 
             <div className="grid grid-cols-2 md:grid-cols-2 gap-2">
-              {employees.map((provider) => (
+
+              {employees
+                .filter((provider) =>
+                  provider.services?.some(
+                    (s) => s.id === selectedService && s.title === selectedMassageType
+                  )
+                )
+              .map((provider) => (
                 <div
                   key={provider.id}
                   className={`border rounded-lg p-1 text-center shadow-xs cursor-pointer transition hover:shadow-md text-sm font-medium ${
@@ -1362,30 +1370,33 @@ const handleCgvScroll = () => {
         {/* Image de fond */}
         {/* bg-cover bg-center */}
         <div 
-          className="absolute inset-0 bg-cover bg-center"
+          className="absolute inset-0 bg-cover bg-center bg-black/10"
           style={{ backgroundImage: `url(${back})`, backgroundPosition: 'center 15%' }}
         >
             <div className="absolute inset-0 bg-black/20" />
         </div>
-        <PromoBanner></PromoBanner>
-    
-          {/* <div className="absolute  bg-[#f18f34] top-4 w-full overflow-hidden">
-            <div className="flex animate-marquee-right whitespace-nowrap text-2xl  text-white sm:text-3xl md:text-4xl font-extrabold gap-16">
-              <span >🎉 Offres promotionnelles :</span>
-              <span >-20% sur tous nos massages !</span>
-              <span >Réservez maintenant et bénéficiez de cadeaux exclusifs ! 🎁</span>
-
-              <span>🎉 Offres promotionnelles :</span>
-              <span >-20% sur tous nos massages !</span>
-              <span>Réservez maintenant et bénéficiez de cadeaux exclusifs ! 🎁</span>
+        <div className="w-full fixed top-0 z-20 luminous-background glow-effect py-0 shadow-2xl">
+            <div className="sparkle"></div>
+            <div className="sparkle"></div>
+            <div className="sparkle"></div>
+            <div className="sparkle"></div>
+            <div className="sparkle"></div>
+            <div className="overflow-hidden relative bg-black/10">
+                <div className="whitespace-nowrap animate-marquee text-white font-bold text-xl sm:text-base md:text-lg  relative z-10 tracking-wider" style={{ fontFamily: 'Agency FB, sans-serif',
+                   WebkitTextStroke: '0.5px white'
+                }}>
+                    OFFRES SPÉCIALES LANCEMENT -25% sur toutes les prestations du 20/09 au 20/10/2025
+                </div>
             </div>
-          </div> */}
+        </div>
+
+        {/* <PromoBanner></PromoBanner> */}
 
           {/* Nav : bouton Mon Compte à droite */}
-          <nav className="relative z-20 flex justify-end px-4 sm:px-6 md:px-8 py-6 max-w-7xl mx-auto">
+          <nav className="relative z-20 flex justify-end px-4 sm:px-6 md:px-8 py-2 max-w-7xl mx-auto">
             <button 
               onClick={openLoginModal}
-              className="bg-[#f18f34] hover:bg-[#f9b131] text-white px-4 sm:px-6 py-2 rounded-full transition-colors text-sm sm:text-base md:text-lg"
+              className="bg-[#f18f34] hover:bg-[#f9b131] text-white text-bold px-4 sm:px-6 py-2 rounded-full transition-colors text-sm sm:text-base md:text-lg"
               style={{ fontFamily: 'Agency FB, sans-serif' }}
             >
               Mon Compte
@@ -1539,6 +1550,7 @@ const handleCgvScroll = () => {
                 <X className="w-6 h-6" />
               </button>
             </div>
+            
             {renderBookingForm()}
           </Dialog.Panel>
         </div>

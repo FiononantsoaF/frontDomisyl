@@ -93,7 +93,7 @@ const ProfileEdit: React.FC = () => {
           to="/" 
           className="text-[#f18f34] font-semibold hover:underline mb-4 block"
         >
-          ← Retour à l'accueil
+          ← Retour
         </Link>
       </div>
       <div className="max-w-lg mx-auto mt-12 p-6 bg-white shadow-lg rounded-xl border border-gray-100">
@@ -104,19 +104,18 @@ const ProfileEdit: React.FC = () => {
             <FaUser className="text-[#f18f34]" />
             {userDetail.name}
           </h2>
-
-            <div className="bg-gray-50 p-4 rounded-lg shadow-sm space-y-2">
+            <div className="bg-gray-50 p-5 rounded-lg shadow-sm space-y-2">
               <p className="flex items-center gap-2">
-                <FaPhone className="text-[#f18f34]" />
-                <strong>Téléphone :</strong> {userDetail.phone}
+                <FaPhone className="text-[#f18f34] flex-shrink-0" />
+                <span className="truncate">{userDetail.phone}</span>
               </p>
               <p className="flex items-center gap-2">
-                <FaEnvelope className="text-[#f18f34]" />
-                <strong>Email :</strong> {userDetail.email}
+                <FaEnvelope className="text-[#f18f34] flex-shrink-0" />
+                <span className="truncate block">{userDetail.email}</span>
               </p>
               <p className="flex items-center gap-2">
-                <FaMapMarkerAlt className="text-[#f18f34]" />
-                <strong>Adresse :</strong> {userDetail.address}
+                <FaMapMarkerAlt className="text-[#f18f34] flex-shrink-0" />
+                <span className="truncate block">{userDetail.address}</span>
               </p>
             </div>
 

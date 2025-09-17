@@ -56,6 +56,7 @@ export interface Employee {
   id: string;
   name: string;
   creneaux :Creneau[];
+  services : ServiceType[];
 }
 
 export interface EmployeeCreneau{

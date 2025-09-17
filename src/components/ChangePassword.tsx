@@ -44,7 +44,6 @@ const ChangePassword: React.FC = () => {
         newPassword: clientData.newPassword
       };
       console.log(payload);
-
       const res = await API.post<Reset>(`/change-password`, payload);
       console.log('Mot de passe changé avec succès', res.data);
       alert(res.data.message || 'Mot de passe changé avec succès.');
