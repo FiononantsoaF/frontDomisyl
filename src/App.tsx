@@ -1,6 +1,8 @@
 import React, { useState, useContext, useEffect, useRef  } from 'react';
 import DatePicker from "react-datepicker";
 import "react-datepicker/dist/react-datepicker.css";
+import { registerLocale } from "react-datepicker";
+import { fr } from "date-fns/locale/fr";
 import { parseISO, isSameDay, min } from "date-fns";
 import { Calendar, Heart, Users, MessageSquare, Award, X, ChevronLeft, Clock, MapPin, Check, Mail, Phone, CreditCard } from 'lucide-react';
 import { Dialog } from '@headlessui/react';
@@ -27,8 +29,13 @@ import { Link } from 'react-router-dom';
 import { User as UserIcon } from 'lucide-react';
 import { UserContext } from './components/UserContext';
 import PromoBanner from './components/Promo';
+import ChoiceClientModal from './components/ChoiceClientModal';
+
+
 
 import { Document, Page, pdfjs } from "react-pdf";
+
+registerLocale("fr", fr);
 
 pdfjs.GlobalWorkerOptions.workerSrc = `//cdnjs.cloudflare.com/ajax/libs/pdf.js/${pdfjs.version}/pdf.worker.min.js`;
 
@@ -59,14 +66,17 @@ function App() {
   const [availableCreneaux, setAvailableCreneaux] = useState<CrenVerification[]>([]);
   const [acceptedCGV, setAcceptedCGV] = useState(false);
 
+  const [choiceClient , setChoiceClient] = useState(false);
+  const [loginSource, setLoginSource] = useState<"account" | "booking" | null>(null);
+
   const [rgcScrolledToEnd, setRgcScrolledToEnd] = useState(false);
   const [cgvScrolledToEnd, setCgvScrolledToEnd] = useState(false);
+
   const rgcRef = useRef<HTMLDivElement>(null);
   const cgvRef = useRef<HTMLDivElement>(null);
 
   const [cgvHtml, setCgvHtml] = useState('');
   const [rgcHtml, setRgcHtml] = useState('');
-
 
   const handleProfileClick = () => {
       navigate('/profile-edit');
@@ -104,6 +114,8 @@ function App() {
     confirmPassword:'',
     notes: ''
   });
+
+
   const [clientData, setClientData] = useState({
     login: '',
     password: ''
@@ -145,7 +157,6 @@ function App() {
 
   useEffect(() => {
     if (selectedProviderId && selectedDate) {
-
       fetchCreneaux(selectedProviderId, selectedDate);
       setSelectedCreneauId(null); 
     }
@@ -529,7 +540,13 @@ const handleCgvScroll = () => {
       setuserDetail(userdetail);
       setAppointments(reponse.appointments);
       setSubscriptions(reponse.subscriptions);
-      setShowList(true);
+      if(loginSource === "account"){
+           setShowList(true);
+      } else if (loginSource === "booking"){
+            setIsLoginOpen(false);
+            setIsBookingOpen(true);
+      }
+     
     }
     if (result.success) {
       resetLoginForm();
@@ -606,7 +623,6 @@ const handleCgvScroll = () => {
       );
       if (partialMatch) {
         setSelectedMassageType(partialMatch.id);
-
         console.log(`Service présélectionné (correspondance partielle): ${partialMatch.title}`);
       } else {
         console.warn('Aucune correspondance trouvée pour le service :', subscription.service);
@@ -651,7 +667,6 @@ const handleCgvScroll = () => {
                   >
                     MVola
                   </button>
-
                   {/* Bouton Stripe commenté */}
                   {/* <button
                     onClick={() => setSelectedMethod('stripe')}
@@ -870,6 +885,7 @@ const handleCgvScroll = () => {
             className="w-full rounded-md border border-gray-300 px-2 py-1 focus:outline-none focus:ring-2 focus:ring-[#f18f34]"
             wrapperClassName="w-full" 
             dateFormat="yyyy-MM-dd"
+            locale="fr"
             dayClassName={(date) =>
               isDisabled(date) ? "disabled-red-date" : ""
             }
@@ -1395,7 +1411,10 @@ const handleCgvScroll = () => {
           {/* Nav : bouton Mon Compte à droite */}
           <nav className="relative z-20 flex justify-end px-4 sm:px-6 md:px-8 py-2 max-w-7xl mx-auto">
             <button 
-              onClick={openLoginModal}
+              onClick={() => {
+                setLoginSource("account"); 
+                setIsLoginOpen(true); 
+              }}
               className="bg-[#f18f34] hover:bg-[#f9b131] text-white text-bold px-4 sm:px-6 py-2 rounded-full transition-colors text-sm sm:text-base md:text-lg"
               style={{ fontFamily: 'Agency FB, sans-serif' }}
             >
@@ -1414,7 +1433,8 @@ const handleCgvScroll = () => {
           </p>
           <div className="flex flex-col sm:flex-row gap-3 sm:gap-4">
             <button 
-              onClick={() => setIsBookingOpen(true)}
+              // onClick={() => setIsBookingOpen(true)}
+              onClick={() => { setChoiceClient(true) }}
               className="bg-[#f9b131] hover:bg-[#fdc800] text-[#1d1d1b] z-20 px-6 sm:px-8 py-3 rounded-full flex items-center gap-2 transition-colors text-sm sm:text-base md:text-lg"
               style={{ fontFamily: 'Agency FB, sans-serif',
                  pointerEvents: 'auto'
@@ -1523,6 +1543,7 @@ const handleCgvScroll = () => {
         </div>
       </section>
 
+
       {/* Booking Modal */}
       <Dialog
         open={isBookingOpen}
@@ -1555,6 +1576,15 @@ const handleCgvScroll = () => {
           </Dialog.Panel>
         </div>
       </Dialog>
+  
+      <ChoiceClientModal
+        open={choiceClient}
+        onClose={() => setChoiceClient(false)}
+        setLoginOpen={setIsLoginOpen}
+        setIsBookingOpen={setIsBookingOpen}
+        setLoginSource={setLoginSource}
+      />;
+
 
       {/* connexion  */}
       <Dialog open={isLoginOpen} onClose={() => setIsLoginOpen(false)} className="relative z-50">
@@ -1570,7 +1600,6 @@ const handleCgvScroll = () => {
               </button>
             </div>
             {renderLoginForm()}
-            
           </Dialog.Panel>
         </div>
       </Dialog>
