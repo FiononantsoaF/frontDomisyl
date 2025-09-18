@@ -14,6 +14,7 @@ const PaiementStripe: React.FC<PaiementStripeProps> = ({
   appointment_id,
   subscription_id,
   onSuccess
+  
 }) => {
   const stripe = useStripe();
   const elements = useElements();
