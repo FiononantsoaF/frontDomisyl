@@ -29,6 +29,7 @@ import { Link } from 'react-router-dom';
 import { User as UserIcon } from 'lucide-react';
 import { UserContext } from './components/UserContext';
 import PromoBanner from './components/Promo';
+import OrangeMoney from './components/OrangeMoney';
 import ChoiceClientModal from './components/ChoiceClientModal';
 
 
@@ -153,7 +154,7 @@ function App() {
   const [loadingpay, setLoadingpay] = useState(false);
   const [response, setResponse] = useState<string | null>(null);
   const [showPaymentChoice, setShowPaymentChoice] = useState(false);
-  const [selectedMethod, setSelectedMethod] = useState<'mvola' | 'stripe' | null>(null);
+  const [selectedMethod, setSelectedMethod] = useState<'mvola' | 'stripe' | 'orange'| null>(null);
 
   useEffect(() => {
     if (selectedProviderId && selectedDate) {
@@ -674,15 +675,23 @@ const handleCgvScroll = () => {
                   >
                     Payer par Carte (Stripe)
                   </button> */}
-                  {/* <button
+                  <button
+                    onClick={() => setSelectedMethod('orange')}
                     disabled={!acceptedCGV}
                     className="flex-1 bg-gradient-to-r from-[#f9b131] to-[#f18f34] hover:from-[#f18f34] hover:to-[#f9b131] text-dark px-4 py-3.5 rounded-lg transition-all flex items-center justify-center gap-2 disabled:opacity-50 disabled:cursor-not-allowed font-bold shadow-md hover:shadow-lg"
                   >
                     Orange Money
-                  </button> */}
+                  </button>
                 </div>
             </div>
           </div>
+        )}
+
+
+        {/* vue paiement orange */}
+
+        {selectedMethod === "orange" && (
+          <OrangeMoney amount={paiement?.price ?? 0 } />
         )}
 
         {/* Vue paiement MVola */}
@@ -898,40 +907,48 @@ const handleCgvScroll = () => {
             }
           />
         </div>
-        {selectedService && selectedMassageType   && (
+        {selectedMassageType   && (
           <div>
             <label className="block text-sm font-medium text-gray-700 mb-2">
               Sélectionnez un prestataire *
             </label>
 
             <div className="grid grid-cols-2 md:grid-cols-2 gap-2">
-
-              {employees
-                .filter((provider) =>
-                  provider.services?.some(
-                    (s) => s.id === selectedService && s.title === selectedMassageType
+              {employees.filter(provider =>
+                provider.services?.some(s => s.id == Number(selectedMassageType))
+              ).length > 0 ? (
+                employees
+                  .filter(provider =>
+                    provider.services?.some(s => s.id == Number(selectedMassageType))
                   )
-                )
-              .map((provider) => (
-                <div
-                  key={provider.id}
-                  className={`border rounded-lg p-1 text-center shadow-xs cursor-pointer transition hover:shadow-md text-sm font-medium ${
-                    selectedProviderId === provider.id.toString()
-                      ? 'border-[#f18f34] bg-orange-50'
-                      : 'border-gray-200 bg-white'
-                  }`}
-                  onClick={() => {
-                    setSelectedProviderId(provider.id.toString());
-                    setSelectedCreneauId(null);
-                  }}
-                >
-                <span className="truncate block text-xs font-medium text-gray-700">
-                  {provider.name}
-                </span>
+                  .map(provider => (
+                    <div
+                      key={provider.id}
+                      className={`border rounded-lg p-1 text-center shadow-xs cursor-pointer transition hover:shadow-md text-sm font-medium ${
+                        selectedProviderId === provider.id.toString()
+                          ? 'border-[#f18f34] bg-orange-50'
+                          : 'border-gray-200 bg-white'
+                      }`}
+                      onClick={() => {
+                        setSelectedProviderId(provider.id.toString());
+                        setSelectedCreneauId(null);
+                      }}
+                    >
+                      <span className="truncate block text-xs font-medium text-gray-700">
+                        {provider.name}
+                      </span>
+                    </div>
+                  ))
+                  ) : (
+                    <p className="text-xs text-gray-500 col-span-2">
+                      Aucun prestataire disponible
+                    </p>
+                  )}
                 </div>
-              ))}
-            </div>
-              {availableCreneaux.length > 0 ? (
+
+
+              { selectedProviderId && availableCreneaux.length > 0 ? (
+              
                 <div className="flex flex-wrap gap-2 p-y-4 mt-4">
                   {availableCreneaux.map((creneau) => (
                     <button
@@ -954,7 +971,7 @@ const handleCgvScroll = () => {
                 </div>
               ) : (
                 <p className="text-xs text-gray-500">
-                  Aucun créneau disponible pour ce prestataire à cette date.
+                  Aucun créneau disponible
                 </p>
               )}
           </div>
