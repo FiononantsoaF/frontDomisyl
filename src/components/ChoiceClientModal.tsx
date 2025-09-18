@@ -6,7 +6,9 @@ type ChoiceClientModalProps = {
   onClose: () => void;
   setLoginOpen: (open: boolean) => void;
   setIsBookingOpen: (open: boolean) => void;
-  setLoginSource: (source: "account" | "booking") => void; // <- correction ici
+  setLoginSource: (source: "account" | "booking") => void; 
+  resetBookingForm: () => void;
+  handleClientChoice: (source: "account" | "booking") => void;
 };
 
 export default function ChoiceClientModal({
@@ -14,14 +16,13 @@ export default function ChoiceClientModal({
   onClose,
   setLoginOpen,
   setIsBookingOpen,
-  setLoginSource, // n'oublie pas de le récupérer
+  setLoginSource,
+  resetBookingForm,
+  handleClientChoice,
 }: ChoiceClientModalProps) {
   return (
     <Dialog open={open} onClose={onClose} className="relative z-50">
-      {/* Overlay */}
       <div className="fixed inset-0 bg-black/30" aria-hidden="true" />
-
-      {/* Panel */}
       <div className="fixed inset-0 flex items-center justify-center p-4">
         <Dialog.Panel className="w-full max-w-md transform rounded-2xl bg-white p-6 text-left align-middle shadow-xl transition-all">
           {/* Header */}
@@ -30,7 +31,7 @@ export default function ChoiceClientModal({
               className="text-xl font-medium text-gray-900"
               style={{ fontFamily: "Agency FB, sans-serif" }}
             >
-              Choix du client
+              {/* Choix du client */}
             </Dialog.Title>
             <button
               onClick={onClose}
@@ -41,29 +42,38 @@ export default function ChoiceClientModal({
           </div>
 
           {/* Boutons */}
-          <div className="flex flex-col gap-4">
+            <div className="flex flex-row gap-4">
             <button
-              onClick={() => {
-                setLoginSource("booking");
-                setLoginOpen(true);
+                onClick={() => {
                 onClose();
-              }}
-              className="w-full rounded-lg border border-gray-300 px-4 py-3 text-center text-gray-700 hover:bg-gray-100 transition"
+                if (localStorage.getItem("user") && localStorage.getItem("user_id")) {
+                    handleClientChoice("booking");
+                } else {
+                    setLoginSource("booking");
+                    setLoginOpen(true);
+                }
+                }}
+                className="w-1/2 rounded-lg border border-gray-300 px-4 py-3 text-center text-gray-700 hover:bg-gray-100 transition"
             >
-              Déjà client
+                Déjà client
             </button>
 
             <button
-              onClick={() => {
-                setIsBookingOpen(true); // Nouveau client
+                onClick={() => {
+                handleClientChoice("booking");
+                localStorage.removeItem("user");
+                localStorage.removeItem("user_id");
+                resetBookingForm();
+                setIsBookingOpen(true);
                 onClose();
-              }}
-              className="w-full rounded-lg bg-[#f18f34] text-white px-4 py-3 text-center hover:bg-[#f9b131] transition"
-              style={{ fontFamily: "Agency FB, sans-serif" }}
+                }}
+                className="w-1/2 rounded-lg bg-[#f18f34] text-white px-4 py-3 text-center hover:bg-[#f9b131] transition"
+                style={{ fontFamily: "Agency FB, sans-serif" }}
             >
-              Nouveau client
+                Nouveau client
             </button>
-          </div>
+            </div>
+
         </Dialog.Panel>
       </div>
     </Dialog>
