@@ -1,8 +1,10 @@
 import React, { useState, useContext, useEffect, useRef  } from 'react';
 import DatePicker from "react-datepicker";
 import "react-datepicker/dist/react-datepicker.css";
+import { registerLocale } from "react-datepicker";
+import { fr } from "date-fns/locale/fr";
 import { parseISO, isSameDay, min } from "date-fns";
-import { Calendar, Heart, Users, MessageSquare, Award, X, ChevronLeft, Clock, MapPin, Check, Mail, Phone, CreditCard } from 'lucide-react';
+import { Calendar, Heart, Users, MessageSquare, Award, X, ChevronLeft, Clock, MapPin, Check, Mail, Phone, CreditCard, Briefcase } from 'lucide-react';
 import { Dialog } from '@headlessui/react';
 import { format } from 'date-fns';
 import { loadStripe } from '@stripe/stripe-js';
@@ -28,8 +30,14 @@ import { User as UserIcon } from 'lucide-react';
 import { UserContext } from './components/UserContext';
 import PromoBanner from './components/Promo';
 import OrangeMoney from './components/OrangeMoney';
+import ChoiceClientModal from './components/ChoiceClientModal';
+import { Client } from './api/serviceCategoryApi';
+
+
 
 import { Document, Page, pdfjs } from "react-pdf";
+
+registerLocale("fr", fr);
 
 pdfjs.GlobalWorkerOptions.workerSrc = `//cdnjs.cloudflare.com/ajax/libs/pdf.js/${pdfjs.version}/pdf.worker.min.js`;
 
@@ -60,14 +68,17 @@ function App() {
   const [availableCreneaux, setAvailableCreneaux] = useState<CrenVerification[]>([]);
   const [acceptedCGV, setAcceptedCGV] = useState(false);
 
+  const [choiceClient , setChoiceClient] = useState(false);
+  const [loginSource, setLoginSource] = useState<"account" | "booking" | null>(null);
+
   const [rgcScrolledToEnd, setRgcScrolledToEnd] = useState(false);
   const [cgvScrolledToEnd, setCgvScrolledToEnd] = useState(false);
+
   const rgcRef = useRef<HTMLDivElement>(null);
   const cgvRef = useRef<HTMLDivElement>(null);
 
   const [cgvHtml, setCgvHtml] = useState('');
   const [rgcHtml, setRgcHtml] = useState('');
-
 
   const handleProfileClick = () => {
       navigate('/profile-edit');
@@ -105,6 +116,8 @@ function App() {
     confirmPassword:'',
     notes: ''
   });
+
+
   const [clientData, setClientData] = useState({
     login: '',
     password: ''
@@ -146,7 +159,6 @@ function App() {
 
   useEffect(() => {
     if (selectedProviderId && selectedDate) {
-
       fetchCreneaux(selectedProviderId, selectedDate);
       setSelectedCreneauId(null); 
     }
@@ -254,6 +266,57 @@ const handleCgvScroll = () => {
   }
 };
 
+  // const handleClientChoice = async (
+  //   source: "account" | "booking",
+  //   users?: any,
+  //   isNewClient: boolean = false
+  // ) => {
+  //   console.log("handleClientChoice", source, { users, isNewClient });
+  //   if (isNewClient) {
+  //     localStorage.removeItem("user");
+  //     localStorage.removeItem("user_id");
+  //     setuserDetail(null);
+  //   } else if (users) {
+  //     localStorage.setItem("user", JSON.stringify(users));
+  //     if (users.id) localStorage.setItem("user_id", String(users.id));
+  //     setuserDetail(getUser());
+  //   } else {
+  //     setuserDetail(getUser());
+  //   }
+  //   const reponse = await servicesService.appointandsub();
+  //     setAppointments(reponse.appointments);
+  //     setSubscriptions(reponse.subscriptions);
+
+  //   if (source === "account") {
+  //     setShowList(true);
+  //   } else if (source === "booking") {
+  //     setIsLoginOpen(false);
+  //     setIsBookingOpen(true);
+  //   }
+  // };
+
+  const handleClientChoice = async (source: "account" | "booking", users?: any) => {
+    console.log("test ----------------avant-----");
+    if (users) {
+      localStorage.setItem("user", JSON.stringify(users));
+    }
+    console.log("test",localStorage.getItem("user"));
+    const userdetail = getUser();
+    setuserDetail(userdetail);
+    if (source === "account") {
+      const reponse = await servicesService.appointandsub();
+      setAppointments(reponse.appointments);
+      setSubscriptions(reponse.subscriptions);
+      setShowList(true); 
+      console.log("account -----------------");
+    } else if (source === "booking") {
+
+      setIsLoginOpen(false);
+      setIsBookingOpen(true); 
+      console.log("booking -----------------");
+    }
+  };
+
 
   const resetBookingModal = () => {
     setFromSubscription(false);
@@ -265,6 +328,7 @@ const handleCgvScroll = () => {
     setSelectedCreneauId(null);
     setSelectedDate(null);
     setSelectedTime('');
+    
     setAvailableCreneaux([]);
   };
 
@@ -493,7 +557,7 @@ const handleCgvScroll = () => {
   
   const getUser = (): User | null => {
     const data = localStorage.getItem('user');
-    return data ? JSON.parse(data) as User : null;
+    return data ? JSON.parse(data) as User: null;
   };
 
   const isDisabled = (date: Date) =>
@@ -506,7 +570,6 @@ const handleCgvScroll = () => {
       alert("Veuillez remplir les informations");
       return;
     }
-
     const payload: Login = {
       login :clientData.login,
       password : clientData.password,
@@ -523,6 +586,7 @@ const handleCgvScroll = () => {
         email: user.email ? user.email.toString() : undefined,
         address : user.address,
       };
+
       // localStorage.setItem('user', JSON.stringify(users));
       localStorage.setItem("user", JSON.stringify(users));
       const reponse = await servicesService.appointandsub();
@@ -530,7 +594,12 @@ const handleCgvScroll = () => {
       setuserDetail(userdetail);
       setAppointments(reponse.appointments);
       setSubscriptions(reponse.subscriptions);
-      setShowList(true);
+      if (loginSource === "booking") {
+        setIsLoginOpen(false);
+        setIsBookingOpen(true); 
+      } else if (loginSource === "account") {
+        setShowList(true);
+      }
     }
     if (result.success) {
       resetLoginForm();
@@ -607,7 +676,6 @@ const handleCgvScroll = () => {
       );
       if (partialMatch) {
         setSelectedMassageType(partialMatch.id);
-
         console.log(`Service présélectionné (correspondance partielle): ${partialMatch.title}`);
       } else {
         console.warn('Aucune correspondance trouvée pour le service :', subscription.service);
@@ -652,7 +720,6 @@ const handleCgvScroll = () => {
                   >
                     MVola
                   </button>
-
                   {/* Bouton Stripe commenté */}
                   {/* <button
                     onClick={() => setSelectedMethod('stripe')}
@@ -879,6 +946,7 @@ const handleCgvScroll = () => {
             className="w-full rounded-md border border-gray-300 px-2 py-1 focus:outline-none focus:ring-2 focus:ring-[#f18f34]"
             wrapperClassName="w-full" 
             dateFormat="yyyy-MM-dd"
+            locale="fr"
             dayClassName={(date) =>
               isDisabled(date) ? "disabled-red-date" : ""
             }
@@ -892,11 +960,10 @@ const handleCgvScroll = () => {
           />
         </div>
         {selectedMassageType   && (
-          <div>
+          <div className="mt-4">
             <label className="block text-sm font-medium text-gray-700 mb-2">
               Sélectionnez un prestataire *
             </label>
-
             <div className="grid grid-cols-2 md:grid-cols-2 gap-2">
               {employees.filter(provider =>
                 provider.services?.some(s => s.id == Number(selectedMassageType))
@@ -929,35 +996,39 @@ const handleCgvScroll = () => {
                     </p>
                   )}
                 </div>
-
-
-              { selectedProviderId && availableCreneaux.length > 0 ? (
-              
-                <div className="flex flex-wrap gap-2 p-y-4 mt-4">
-                  {availableCreneaux.map((creneau) => (
-                    <button
-                      key={creneau.id}
-                      type="button"
-                      onClick={() => setSelectedCreneauId(creneau.id)}
-                      className={`px-2 py-1 rounded-md text-xs border transition ${
-                        selectedCreneauId === creneau.id
-                          ? 'bg-[#f18f34] text-white border-[#f18f34]'
-                          : creneau.is_taken
-                            ? 'bg-gray-200 text-gray-400 cursor-not-allowed border-gray-300'
-                            : 'bg-gray-100 text-black border-gray-200'
-                      }`}
-                      disabled={creneau.is_taken}
-                      title={creneau.is_taken ? 'Indisponible' : 'Disponible'}
-                    >
-                      {creneau.time}
-                    </button>
-                  ))}
+              {selectedProviderId && availableCreneaux.length > 0 ? (
+                <div className="mt-4">
+                  <label className="block text-sm font-medium text-gray-700 mb-1">
+                    Créneaux disponibles *
+                  </label>
+                  <div className="flex flex-wrap gap-1">
+                    {availableCreneaux.map((creneau) => (
+                      <button
+                        key={creneau.id}
+                        type="button"
+                        onClick={() => !creneau.is_taken && setSelectedCreneauId(creneau.id)}
+                        className={`px-1 py-0 rounded-md text-xs border transition-colors ${
+                          selectedCreneauId === creneau.id
+                            ? 'bg-[#f18f34] text-white border-[#f18f34]'
+                            : creneau.is_taken
+                              ? 'bg-gray-200 text-gray-400 cursor-not-allowed border-gray-300'
+                              : 'bg-gray-100 text-black border-gray-200 hover:bg-gray-200'
+                        }`}
+                        disabled={creneau.is_taken}
+                        aria-disabled={creneau.is_taken}
+                        title={creneau.is_taken ? 'Indisponible' : 'Disponible'}
+                      >
+                        {creneau.time}
+                      </button>
+                    ))}
+                  </div>
                 </div>
               ) : (
-                <p className="text-xs text-gray-500">
+                <p className="text-xs text-gray-500 mt-2">
                   Aucun créneau disponible
                 </p>
               )}
+
           </div>
         )}
       </div>
@@ -1007,7 +1078,7 @@ const handleCgvScroll = () => {
             readOnly={fromSubscription}
           />
         </div>
-        {!localStorage.getItem("user_id") &&(
+        {!localStorage.getItem("user_id") && !localStorage.getItem("user") && (
         <>
         <div>
           <label className="block text-sm font-medium text-gray-700 mb-1">
@@ -1412,7 +1483,10 @@ const handleCgvScroll = () => {
           {/* Nav : bouton Mon Compte à droite */}
           <nav className="relative z-20 flex justify-end px-4 sm:px-6 md:px-8 py-2 max-w-7xl mx-auto">
             <button 
-              onClick={openLoginModal}
+              onClick={() => {
+                setLoginSource("account"); 
+                openLoginModal(); 
+              }}
               className="bg-[#f18f34] hover:bg-[#f9b131] text-white text-bold px-4 sm:px-6 py-2 rounded-full transition-colors text-sm sm:text-base md:text-lg"
               style={{ fontFamily: 'Agency FB, sans-serif' }}
             >
@@ -1431,7 +1505,8 @@ const handleCgvScroll = () => {
           </p>
           <div className="flex flex-col sm:flex-row gap-3 sm:gap-4">
             <button 
-              onClick={() => setIsBookingOpen(true)}
+              // onClick={() => setIsBookingOpen(true)}
+              onClick={() => { setChoiceClient(true) }}
               className="bg-[#f9b131] hover:bg-[#fdc800] text-[#1d1d1b] z-20 px-6 sm:px-8 py-3 rounded-full flex items-center gap-2 transition-colors text-sm sm:text-base md:text-lg"
               style={{ fontFamily: 'Agency FB, sans-serif',
                  pointerEvents: 'auto'
@@ -1440,6 +1515,22 @@ const handleCgvScroll = () => {
             >
               <Calendar className="w-5 h-5" />
               Prendre RDV
+            </button>
+            <button 
+                onClick={() => { 
+                  const section = document.getElementById("services");
+                  if (section) {
+                    section.scrollIntoView({ behavior: "smooth" });
+                  }
+                }}     
+                className="bg-[#f9b131] hover:bg-[#fdc800] text-[#1d1d1b] z-20 px-6 sm:px-8 py-3 rounded-full flex items-center gap-2 transition-colors text-sm sm:text-base md:text-lg"
+                style={{ fontFamily: 'Agency FB, sans-serif',
+                  pointerEvents: 'auto'
+                }}
+                
+            >
+              <Briefcase className="w-5 h-5" />
+              Nos Services
             </button>
             <button 
               onClick={() => setIsContactOpen(true)}
@@ -1453,7 +1544,7 @@ const handleCgvScroll = () => {
         </div>
       </header>
       {/* Services Section */}
-      <section className="py-20 px-6">
+      <section id="services" className="py-20 px-6">
         <div className="max-w-7xl mx-auto">
           <h2 
             className="text-4xl text-center mb-16 text-[#1d1d1b]"
@@ -1540,6 +1631,7 @@ const handleCgvScroll = () => {
         </div>
       </section>
 
+
       {/* Booking Modal */}
       <Dialog
         open={isBookingOpen}
@@ -1572,6 +1664,16 @@ const handleCgvScroll = () => {
           </Dialog.Panel>
         </div>
       </Dialog>
+  
+      <ChoiceClientModal
+        open={choiceClient}
+        onClose={() => setChoiceClient(false)}
+        setLoginOpen={setIsLoginOpen}
+        setIsBookingOpen={setIsBookingOpen}
+        setLoginSource={setLoginSource}
+        resetBookingForm={resetBookingForm}
+        handleClientChoice={handleClientChoice}
+      />;
 
       {/* connexion  */}
       <Dialog open={isLoginOpen} onClose={() => setIsLoginOpen(false)} className="relative z-50">
@@ -1587,7 +1689,6 @@ const handleCgvScroll = () => {
               </button>
             </div>
             {renderLoginForm()}
-            
           </Dialog.Panel>
         </div>
       </Dialog>
