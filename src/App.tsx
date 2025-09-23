@@ -4,7 +4,7 @@ import "react-datepicker/dist/react-datepicker.css";
 import { registerLocale } from "react-datepicker";
 import { fr } from "date-fns/locale/fr";
 import { parseISO, isSameDay, min } from "date-fns";
-import { Calendar, Heart, Users, MessageSquare, Award, X, ChevronLeft, Clock, MapPin, Check, Mail, Phone, CreditCard, Briefcase } from 'lucide-react';
+import { Calendar, Heart, Users, MessageSquare, Award,Info,ChevronDown, List, X, ChevronLeft, Clock, MapPin, Check, Mail, Phone, CreditCard, Briefcase } from 'lucide-react';
 import { Dialog } from '@headlessui/react';
 import { format } from 'date-fns';
 import { loadStripe } from '@stripe/stripe-js';
@@ -31,9 +31,7 @@ import { UserContext } from './components/UserContext';
 import PromoBanner from './components/Promo';
 import OrangeMoney from './components/OrangeMoney';
 import ChoiceClientModal from './components/ChoiceClientModal';
-import { Client } from './api/serviceCategoryApi';
-
-
+import PaymentInfo from './components/PaymentInfo';
 
 import { Document, Page, pdfjs } from "react-pdf";
 
@@ -73,6 +71,8 @@ function App() {
 
   const [rgcScrolledToEnd, setRgcScrolledToEnd] = useState(false);
   const [cgvScrolledToEnd, setCgvScrolledToEnd] = useState(false);
+
+  const [showPaymentModal, setShowPaymentModal] = useState(false);
 
   const rgcRef = useRef<HTMLDivElement>(null);
   const cgvRef = useRef<HTMLDivElement>(null);
@@ -189,7 +189,7 @@ function App() {
     }
   }, [showList]);
 
-
+  
   useEffect(() => {
     servicesService.all()
       .then((data) => {
@@ -197,10 +197,10 @@ function App() {
         setLogo(data.logo);
         setBack(data.back);
         setEmployee(data.prestataires);
-        console.log('Données reçues de prestataires :', data.prestataires)
+        // console.log('Données reçues de prestataires :', data.prestataires)
       })
       .catch((error) => {useState({})
-        console.error('Erreur lors du chargement des services:', error);
+        // console.error('Erreur lors du chargement des services:', error);
       });
   }, []);
 
@@ -219,10 +219,14 @@ function App() {
     }
   }, []);
 
+ useEffect(() => {
+    setShowPaymentModal(acceptedCGV);
+
+  }, [acceptedCGV]);
+
 
   useEffect(() => {
   if (paiement !== null) {
-      console.log("paiement enregistre", paiement);
     }
   }, [paiement]);
 
@@ -231,92 +235,205 @@ function App() {
       navigate(0);
   }
 
-useEffect(() => {
-  fetch("/CGV.html")
-    .then((res) => res.text())
-    .then((data) => setCgvHtml(data))
-    .catch((error) => console.error('Erreur lors du chargement CGV:', error));
-}, []);
+  useEffect(() => {
+    fetch("/CGV.html")
+      .then((res) => res.text())
+      .then((data) => setCgvHtml(data))
+      .catch((error) => console.error('Erreur lors du chargement CGV:', error));
+  }, []);
 
-useEffect(() => {
-  fetch("/RGC.html")
-    .then((res) => res.text())
-    .then((data) => setRgcHtml(data))
-    .catch((error) => console.error('Erreur lors du chargement RGC:', error));
-}, []);
+  useEffect(() => {
+    fetch("/RGC.html")
+      .then((res) => res.text())
+      .then((data) => setRgcHtml(data))
+      .catch((error) => console.error('Erreur lors du chargement RGC:', error));
+  }, []);
 
-// Fonctions de gestion du scroll
-const handleRgcScroll = () => {
-  if (rgcRef.current) {
-    const { scrollTop, scrollHeight, clientHeight } = rgcRef.current;
-    if (scrollTop + clientHeight >= scrollHeight - 1) { // -1 pour éviter les problèmes de précision
-      console.log("RGC scrolled to end");
-      setRgcScrolledToEnd(true);
-    }
-  }
-};
-
-const handleCgvScroll = () => {
-  if (cgvRef.current) {
-    const { scrollTop, scrollHeight, clientHeight } = cgvRef.current;
-    if (scrollTop + clientHeight >= scrollHeight - 1) { // -1 pour éviter les problèmes de précision
-      console.log("CGV scrolled to end");
-      setCgvScrolledToEnd(true);
-    }
-  }
-};
-
-  // const handleClientChoice = async (
-  //   source: "account" | "booking",
-  //   users?: any,
-  //   isNewClient: boolean = false
-  // ) => {
-  //   console.log("handleClientChoice", source, { users, isNewClient });
-  //   if (isNewClient) {
-  //     localStorage.removeItem("user");
-  //     localStorage.removeItem("user_id");
-  //     setuserDetail(null);
-  //   } else if (users) {
-  //     localStorage.setItem("user", JSON.stringify(users));
-  //     if (users.id) localStorage.setItem("user_id", String(users.id));
-  //     setuserDetail(getUser());
-  //   } else {
-  //     setuserDetail(getUser());
-  //   }
-  //   const reponse = await servicesService.appointandsub();
-  //     setAppointments(reponse.appointments);
-  //     setSubscriptions(reponse.subscriptions);
-
-  //   if (source === "account") {
-  //     setShowList(true);
-  //   } else if (source === "booking") {
-  //     setIsLoginOpen(false);
-  //     setIsBookingOpen(true);
-  //   }
-  // };
-
-  const handleClientChoice = async (source: "account" | "booking", users?: any) => {
-    console.log("test ----------------avant-----");
-    if (users) {
-      localStorage.setItem("user", JSON.stringify(users));
-    }
-    console.log("test",localStorage.getItem("user"));
-    const userdetail = getUser();
-    setuserDetail(userdetail);
-    if (source === "account") {
-      const reponse = await servicesService.appointandsub();
-      setAppointments(reponse.appointments);
-      setSubscriptions(reponse.subscriptions);
-      setShowList(true); 
-      console.log("account -----------------");
-    } else if (source === "booking") {
-
-      setIsLoginOpen(false);
-      setIsBookingOpen(true); 
-      console.log("booking -----------------");
+  const handleRgcScroll = () => {
+    if (rgcRef.current) {
+      const { scrollTop, scrollHeight, clientHeight } = rgcRef.current;
+      if (scrollTop + clientHeight >= scrollHeight - 1) { 
+        // console.log("RGC scrolled to end");
+        setRgcScrolledToEnd(true);
+      }
     }
   };
 
+  const handleCgvScroll = () => {
+    if (cgvRef.current) {
+      const { scrollTop, scrollHeight, clientHeight } = cgvRef.current;
+      if (scrollTop + clientHeight >= scrollHeight - 1) { 
+        // console.log("CGV scrolled to end");
+        setCgvScrolledToEnd(true);
+      }
+    }
+  };
+
+  //   if (users) {
+  //     localStorage.setItem("user", JSON.stringify(users));
+  //   }
+  //   console.log("test",localStorage.getItem("user"));
+  //   const userdetail = getUser();
+  //   setuserDetail(userdetail);
+  //   if (source === "account") {
+  //     const reponse = await servicesService.appointandsub();
+  //     setAppointments(reponse.appointments);
+  //     setSubscriptions(reponse.subscriptions);
+  //     setShowList(true); 
+  //     console.log("account -----------------");
+  //   } else if (source === "booking") {
+  //     setIsLoginOpen(false);
+  //     setIsBookingOpen(true); 
+  //     console.log("booking -----------------");
+  //   }
+  // };
+
+  // const handleLogin = async (e: React.FormEvent) => {
+  //   e.preventDefault();
+  //   if (!clientData ) {
+  //     alert("Veuillez remplir les informations");
+  //     return;
+  //   }
+  //   const payload: Login = {
+  //     login :clientData.login,
+  //     password : clientData.password,
+  //   };
+
+  //   const result = await servicesService.login(payload);
+  //   const user = result.data;
+  //   if (user && user.id !== undefined) {
+  //     localStorage.setItem("user_id", user.id.toString());
+      
+  //     const users: User = {
+  //       name: user.name.toString(),
+  //       phone: user.phone.toString(),
+  //       email: user.email ? user.email.toString() : undefined,
+  //       address : user.address,
+  //     };
+
+  //     // localStorage.setItem('user', JSON.stringify(users));
+  //     localStorage.setItem("user", JSON.stringify(users));
+  //     const reponse = await servicesService.appointandsub();
+  //     const userdetail = getUser();
+  //     setuserDetail(userdetail);
+  //     setAppointments(reponse.appointments);
+  //     setSubscriptions(reponse.subscriptions);
+  //     if (loginSource === "booking") {
+  //       setIsLoginOpen(false);
+  //       setIsBookingOpen(true); 
+  //     } else if (loginSource === "account") {
+  //       setShowList(true);
+  //     }
+  //   }
+  //   if (result.success) {
+  //     resetLoginForm();
+  //     refreshPage();
+  //   } else {
+  //     alert("Erreur : " + result.message);
+  //     resetLoginForm();
+  //   }
+  // }; 
+   
+  const handleLogin = async (e: React.FormEvent) => {
+      e.preventDefault();
+      
+      if (!clientData || !clientData.login || !clientData.password) {
+        alert("Veuillez remplir les informations");
+        return;
+      }
+
+      try {
+        const payload: Login = {
+          login: clientData.login,
+          password: clientData.password,
+        };
+
+        const result = await servicesService.login(payload);
+        // console.log("Résultat du login:", result);
+
+        if (!result.success || !result.data) {
+          alert("Erreur : " + result.message);
+          resetLoginForm();
+          return;
+        }
+        if(result.message == null){
+            alert(result.message);
+        }
+
+        const user = result.data;
+        if (user.id !== undefined) {
+          localStorage.setItem("user_id", user.id.toString());
+        }
+        const users: User = {
+          name: user.name.toString(),
+          phone: user.phone.toString(),
+          email: user.email ? user.email.toString() : "",
+          address: user.address || "",
+        };
+        localStorage.setItem("user", JSON.stringify(users));
+        const response = await servicesService.appointandsub();
+        const userDetail = getUser();
+        setuserDetail(userDetail);
+        setAppointments(response.appointments);
+        setSubscriptions(response.subscriptions);
+
+        // Gérer la redirection selon la source du login
+        if (loginSource === "booking") {
+          fillBookingFormWithUserData(users);
+          setIsLoginOpen(false);
+          setIsBookingOpen(true);
+          // console.log("Redirection vers booking avec formulaire pré-rempli");
+        } else if (loginSource === "account") {
+          setShowList(true);
+          setIsLoginOpen(false);
+          // console.log("Redirection vers account");
+        }
+        // resetLoginForm();
+      } catch (error: any) {
+        console.error("Erreur lors de la connexion:", error);
+        resetLoginForm();
+      }
+    };
+
+    const fillBookingFormWithUserData = (userData: User) => {
+      setFormData({
+        name: userData.name || '',
+        phone: userData.phone || '',
+        email: userData.email || '',
+        address: userData.address || '',
+        password: '',
+        confirmPassword: '',
+        notes: ''
+      });
+      // console.log("Formulaire pré-rempli avec les données utilisateur:", userData);
+    };
+
+  const handleClientChoice = async (source: "account" | "booking", users?: any) => {
+    if (users) {
+      localStorage.setItem("user", JSON.stringify(users));
+    }
+    
+    const userDetail = getUser();
+    setuserDetail(userDetail);
+    
+    if (source === "account") {
+      try {
+        const response = await servicesService.appointandsub();
+        setAppointments(response.appointments);
+        setSubscriptions(response.subscriptions);
+        setShowList(true);
+      } catch (error) {
+        console.error("Erreur lors du chargement des données:", error);
+      }
+    } else if (source === "booking") {
+      if (userDetail) {
+        fillBookingFormWithUserData(userDetail);
+      }
+      setIsLoginOpen(false);
+      setIsBookingOpen(true);
+      // console.log("Mode réservation activé");
+    }
+  };
 
   const resetBookingModal = () => {
     setFromSubscription(false);
@@ -339,7 +456,7 @@ const handleCgvScroll = () => {
       setIsLoginOpen(false)
       localStorage.clear();
       refreshPage();
-      console.log("deconnexion");
+      // console.log("deconnexion");
   };
 
   const handleInputChange = async (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>) => {
@@ -491,17 +608,19 @@ const handleCgvScroll = () => {
   };
 
   const handleShowTypeDetails = (type: ServiceType) => {
-    setSelectedType(type);
-    console.log('Type sélectionné:', type);
+    if (selectedType?.id === type.id) {
+      setSelectedType(null); 
+    } else {
+      setSelectedType(type); 
+    }
   };
 
   const handleBookNow = (service: string) => {
     setSelectedService(service);
-    console.log("formule:", selectedService);
     setShowServices(false);
     setShowSportDetails(false);
     setShowCareDetails(false);
-    setIsBookingOpen(true);
+    // setIsBookingOpen(true);
   };
 
   const resetBookingForm = () => {
@@ -553,6 +672,7 @@ const handleCgvScroll = () => {
     }
     setIsLoginOpen(true);
   };  
+
   const { user } = useContext(UserContext);
   
   const getUser = (): User | null => {
@@ -563,52 +683,6 @@ const handleCgvScroll = () => {
   const isDisabled = (date: Date) =>
     disabledDates.some((d) => isSameDay(d, date));
 
-
-  const handleLogin = async (e: React.FormEvent) => {
-    e.preventDefault();
-    if (!clientData ) {
-      alert("Veuillez remplir les informations");
-      return;
-    }
-    const payload: Login = {
-      login :clientData.login,
-      password : clientData.password,
-    };
-
-    const result = await servicesService.login(payload);
-    const user = result.data;
-    if (user && user.id !== undefined) {
-      localStorage.setItem("user_id", user.id.toString());
-      
-      const users: User = {
-        name: user.name.toString(),
-        phone: user.phone.toString(),
-        email: user.email ? user.email.toString() : undefined,
-        address : user.address,
-      };
-
-      // localStorage.setItem('user', JSON.stringify(users));
-      localStorage.setItem("user", JSON.stringify(users));
-      const reponse = await servicesService.appointandsub();
-      const userdetail = getUser();
-      setuserDetail(userdetail);
-      setAppointments(reponse.appointments);
-      setSubscriptions(reponse.subscriptions);
-      if (loginSource === "booking") {
-        setIsLoginOpen(false);
-        setIsBookingOpen(true); 
-      } else if (loginSource === "account") {
-        setShowList(true);
-      }
-    }
-    if (result.success) {
-      resetLoginForm();
-      refreshPage();
-    } else {
-      alert("Erreur : " + result.message);
-      resetLoginForm();
-    }
-  }; 
 
   const handleClientDataChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const { name, value } = e.target;
@@ -711,15 +785,16 @@ const handleCgvScroll = () => {
                   J'accepte les <a href="/CGV.pdf" className="text-[#f18f34] underline">conditions générales de vente</a>
                 </label>
               </div>
-
                 <div className="flex flex-col md:flex-row gap-4 justify-center mt-4">
-                  <button
+                  {showPaymentModal && <PaymentInfo isOpen={showPaymentModal} setIsOpen={setShowPaymentModal} choicePaiement={showPaymentChoice} setChoicePaiement={setShowPaymentChoice} price={paiement?.price}/>}
+
+                  {/* <button
                     onClick={() => setSelectedMethod('mvola')}
                     disabled={!acceptedCGV}
                     className="flex-1 bg-gradient-to-r from-[#f9b131] to-[#f18f34] hover:from-[#f18f34] hover:to-[#f9b131] text-dark px-4 py-3.5 rounded-lg transition-all flex items-center justify-center gap-2 disabled:opacity-50 disabled:cursor-not-allowed font-bold shadow-md hover:shadow-lg"
                   >
                     MVola
-                  </button>
+                  </button> */}
                   {/* Bouton Stripe commenté */}
                   {/* <button
                     onClick={() => setSelectedMethod('stripe')}
@@ -727,13 +802,13 @@ const handleCgvScroll = () => {
                   >
                     Payer par Carte (Stripe)
                   </button> */}
-                  <button
+                  {/* <button
                     onClick={() => setSelectedMethod('orange')}
                     disabled={!acceptedCGV}
                     className="flex-1 bg-gradient-to-r from-[#f9b131] to-[#f18f34] hover:from-[#f18f34] hover:to-[#f9b131] text-dark px-4 py-3.5 rounded-lg transition-all flex items-center justify-center gap-2 disabled:opacity-50 disabled:cursor-not-allowed font-bold shadow-md hover:shadow-lg"
                   >
                     Orange Money
-                  </button>
+                  </button> */}
                 </div>
             </div>
           </div>
@@ -877,7 +952,7 @@ const handleCgvScroll = () => {
   );
 
   const renderBookingForm = () => (
-    
+
     <div className="max-h-[80vh] overflow-y-auto px-4">
     <form 
         onSubmit={handleBooking} 
@@ -1237,8 +1312,6 @@ const handleCgvScroll = () => {
         </nav>
         <div className="max-w-7xl mx-auto">
           <div className="grid grid-cols-1 md:grid-cols-1 gap-8">
-            {/* liste des rendez-vous */}
-             <AppointmentsTable appointments={appointments} />
             {/* Liste des abonnements */}
             <div className="overflow-x-auto rounded-xl shadow-md border border-gray-200">
               <h3 className="text-xl font-semibold text-gray-800 mb-4" style={{ fontFamily: 'Agency FB' }}>
@@ -1285,55 +1358,12 @@ const handleCgvScroll = () => {
                     </td>
                   </tr>
                 ))}
-
-                {/* <thead className="bg-[#f18f34] text-white">
-                  <tr>
-                    <th className="px-6 py-3 text-left font-semibold">Formule</th>
-                    <th className="px-6 py-3 text-left font-semibold">Service</th>
-                    <th className="px-6 py-3 text-left font-semibold">Séances</th>
-                    <th className="px-6 py-3 text-left font-semibold">Période</th>
-                    <th className="px-6 py-3 text-left font-semibold">Prix</th>
-                    <th className="px-6 py-3 text-left font-semibold"></th>
-                  </tr>
-                </thead> 
-                <tbody className="divide-y divide-gray-100 bg-white">
-                  {subscriptions?.data?.map((sub, index) => (
-                    <tr key={index} className="hover:bg-gray-50 transition">
-                      <td className="px-6 py-4 font-medium">{sub.formule}</td>
-                      <td className="px-6 py-4">{sub.service}</td>
-                      <td className="px-6 py-4">
-                        {sub.used_session} / {sub.total_session}
-                      </td>
-                      <td className="px-6 py-4 text-base text-gray-800 font-medium whitespace-nowrap">
-                        {sub.date_debut} <span className="text-gray-500 font-normal">→</span> {sub.date_fin}
-                      </td>
-                      <td className="px-6 py-4">{sub.prixservice} Ar</td>
-                      <td className="px-6 py-4 text-base text-gray-800 font-medium whitespace-nowrap">
-                        <button
-                            onClick={() => {
-                                    setShowList(false);
-                                    setIsLoginOpen(false);
-                                    handleSubscriptionBooking(sub);
-                                  }}
-                            className="bg-[#fdc800] hover:bg-[#f9b131] text-[#1d1d1b] px-2 py-1 rounded-full flex items-center gap-1 transition-colors"
-                            style={{ fontFamily: 'Agency FB, sans-serif' }}>
-                            Prendre RDV
-                        </button>
-                      </td>
-                    </tr>
-                  ))}
-
-                  {subscriptions?.data?.length === 0 && (
-                    <tr>
-                      <td colSpan={5} className="px-6 py-4 text-center text-gray-500 italic">
-                        Aucun abonnement trouvé.
-                      </td>
-                    </tr>
-                  )}
-                </tbody> */}
                 </tbody>
               </table>
             </div>
+
+            {/* liste des rendez-vous */}
+             <AppointmentsTable appointments={appointments} />
 
           </div>
         </div>
@@ -1371,7 +1401,16 @@ const handleCgvScroll = () => {
                 className="w-full h-[400px] object-cover rounded-2xl"
               />
               <button
-                onClick={() => handleBookNow(service.title)}
+                onClick={() =>{
+                    handleBookNow(service.title);
+                    const user = localStorage.getItem("user");
+                    const userId = localStorage.getItem("user_id");
+                    if (user && userId) {
+                      setIsBookingOpen(true);
+                    } else {
+                      setChoiceClient(true);
+                    }
+                  }}
                 className="mx-auto bg-[#f18f34] hover:bg-[#f9b131] text-black px-4 py-1 rounded-full transition-colors flex items-center justify-center"
                 style={{ fontFamily: 'Agency FB, sans-serif', display: 'block' }}
               >
@@ -1385,17 +1424,21 @@ const handleCgvScroll = () => {
                   {Array.isArray(service.details?.types) &&
                    service.details.types.map((type, index) => (
                     <div key={index} className="bg-gray-50 p-4 rounded-lg ">
-                      <div className="mb-2">
+                      <div className="mb-1 flex items-center gap-1">
                         {type.price_promo && (
-                          // bg-[#f18f34]
-                          <span className="inline-flex items-center gap-1 bg-[red] text-white text-xs font-bold px-1 py-0 rounded-full">
-                            <Sparkles className="w-3 h-3" />
+                          <span className="inline-flex items-center gap-1 bg-red-500 text-white text-xs font-semibold px-2 py-1 rounded-full shadow-sm">
+                            <Sparkles className="w-2 h-2" />
                             Promotion
                           </span>
                         )}
+                          <button className="bg-[#f18f34] hover:bg-[#f9b131] text-dark text-sm font-medium px-3 py-1 rounded-md shadow ml-auto"
+                                style={{ fontFamily: 'Agency FB, sans-serif' }}>
+                            Réserver
+                          
+                          </button>
                       </div>
                       <div className="flex justify-between items-center mb-2">
-                          <h3 className="text-lg font-semibold">{type.title}</h3>
+                          <h3 className="text-lg font-semibold" translate="no">{type.title}</h3>
                           <div className="flex items-center gap-3">
                             {type.price_promo ? (
                               <>
@@ -1421,15 +1464,17 @@ const handleCgvScroll = () => {
                       </div>
                       <div className="flex items-center text-gray-500 text-sm justify-between">
                         <div dangerouslySetInnerHTML={{ __html: type.description }} />
-                        
                         {type.sessions.some(session => parseInt(session.session_per_period) > 0) && (
                           <div className="ml-auto">
                             <button
                               onClick={() => handleShowTypeDetails(type)}
-                              className="w-fit bg-[#f9b131] hover:bg-[#f18f34] text-black px-4 py-1 rounded-full transition-colors flex items-center justify-center gap-1"
-                              style={{ fontFamily: 'Agency FB, sans-serif' }}
+                              title='Afficher détails'
+                              className="w-fit bg-white hover:bg-grey text-black px-4 py-1 rounded-full transition-colors flex items-center justify-center gap-1"
+                              // style={{ fontFamily: 'Agency FB, sans-serif' }}
                             >
-                              Détails
+                            <ChevronDown 
+                              className={`w-6 h-6 transition-transform duration-300 ${selectedType?.id === type.id ? 'rotate-180' : ''}`} 
+                            />
                             </button>
                           </div>
                         )}
@@ -1473,7 +1518,7 @@ const handleCgvScroll = () => {
                 <div className="whitespace-nowrap animate-marquee text-white font-bold text-xl sm:text-base md:text-lg  relative z-10 tracking-wider" style={{ fontFamily: 'Agency FB, sans-serif',
                    WebkitTextStroke: '0.5px white'
                 }}>
-                    OFFRES SPÉCIALES LANCEMENT -25% sur toutes les prestations du 20/09 au 20/10/2025
+                    OFFRE SPÉCIALE LANCEMENT -25% sur toutes les prestations du 20/09 au 20/10/2025
                 </div>
             </div>
         </div>
@@ -1503,17 +1548,24 @@ const handleCgvScroll = () => {
             Découvrez nos services de massage, sport et soins du corps, 
             directement chez vous pour un maximum de confort.
           </p>
-          <div className="flex flex-col sm:flex-row gap-3 sm:gap-4">
+          <div className="flex flex-col sm:flex-row gap-2 sm:gap-3">
             <button 
-              // onClick={() => setIsBookingOpen(true)}
-              onClick={() => { setChoiceClient(true) }}
-              className="bg-[#f9b131] hover:bg-[#fdc800] text-[#1d1d1b] z-20 px-6 sm:px-8 py-3 rounded-full flex items-center gap-2 transition-colors text-sm sm:text-base md:text-lg"
+              onClick={() => {
+                const user = localStorage.getItem("user");
+                const userId = localStorage.getItem("user_id");
+                if (user && userId) {
+                  setIsBookingOpen(true);
+                } else {
+                  setChoiceClient(true);
+                }
+              }}
+              className="bg-[#f9b131] hover:bg-[#fdc800] text-[#1d1d1b] z-20 px-6 sm:px-8 py-3 rounded-full flex items-center gap-2 transition-colors text-xs sm:text-sm md:text-base"
               style={{ fontFamily: 'Agency FB, sans-serif',
                  pointerEvents: 'auto'
                }}
               
             >
-              <Calendar className="w-5 h-5" />
+              <Calendar className="w-4 h-4" />
               Prendre RDV
             </button>
             <button 
@@ -1523,21 +1575,20 @@ const handleCgvScroll = () => {
                     section.scrollIntoView({ behavior: "smooth" });
                   }
                 }}     
-                className="bg-[#f9b131] hover:bg-[#fdc800] text-[#1d1d1b] z-20 px-6 sm:px-8 py-3 rounded-full flex items-center gap-2 transition-colors text-sm sm:text-base md:text-lg"
+                className="bg-[#f9b131] hover:bg-[#fdc800] text-[#1d1d1b] z-20 px-6 sm:px-8 py-3 rounded-full flex items-center gap-2 transition-colors text-xs sm:text-sm md:text-base"
                 style={{ fontFamily: 'Agency FB, sans-serif',
                   pointerEvents: 'auto'
                 }}
-                
             >
-              <Briefcase className="w-5 h-5" />
+              <Briefcase className="w-4 h-4" />
               Nos Services
             </button>
             <button 
               onClick={() => setIsContactOpen(true)}
-              className="bg-white/10 hover:bg-white/20 text-white px-6 sm:px-8 py-3 rounded-full flex items-center gap-2 backdrop-blur-sm transition-colors text-sm sm:text-base md:text-lg"
+              className="bg-white/10 hover:bg-white/20 text-white px-6 sm:px-8 py-3 rounded-full flex items-center gap-2 backdrop-blur-sm transition-colors text-xs sm:text-sm md:text-base"
               style={{ fontFamily: 'Agency FB, sans-serif' }}
             >
-              <MessageSquare className="w-5 h-5" />
+              <MessageSquare className="w-4 h-4" />
               Nous Contacter
             </button>
           </div>
@@ -1635,7 +1686,8 @@ const handleCgvScroll = () => {
       {/* Booking Modal */}
       <Dialog
         open={isBookingOpen}
-        onClose={() => setIsBookingOpen(false)}
+        // onClose={() => setIsBookingOpen(false)}
+        onClose={() => {}}
         className="relative z-50"
       >
         <div className="fixed inset-0 bg-black/30" aria-hidden="true" />
@@ -1664,19 +1716,22 @@ const handleCgvScroll = () => {
           </Dialog.Panel>
         </div>
       </Dialog>
-  
-      <ChoiceClientModal
-        open={choiceClient}
-        onClose={() => setChoiceClient(false)}
-        setLoginOpen={setIsLoginOpen}
-        setIsBookingOpen={setIsBookingOpen}
-        setLoginSource={setLoginSource}
-        resetBookingForm={resetBookingForm}
-        handleClientChoice={handleClientChoice}
-      />;
+
+      {localStorage.getItem("user") ? null : (
+        <ChoiceClientModal
+          open={choiceClient}
+          onClose={() => setChoiceClient(false)}
+          setLoginOpen={setIsLoginOpen}
+          setIsBookingOpen={setIsBookingOpen}
+          setLoginSource={setLoginSource}
+          resetBookingForm={resetBookingForm}
+          handleClientChoice={handleClientChoice}
+          fillBookingFormWithUserData={fillBookingFormWithUserData}
+        />
+      )}
 
       {/* connexion  */}
-      <Dialog open={isLoginOpen} onClose={() => setIsLoginOpen(false)} className="relative z-50">
+      <Dialog open={isLoginOpen} onClose={() => {}} className="relative z-50">
         <div className="fixed inset-0 bg-black/30" aria-hidden="true" />
         <div className="fixed inset-0 flex items-center justify-center p-4">
           <Dialog.Panel className="max-w-md w-full bg-white rounded-2xl p-6 shadow-xl">
@@ -1696,7 +1751,7 @@ const handleCgvScroll = () => {
       {/* Contact Modal */}
       <Dialog
         open={isContactOpen}
-        onClose={() => setIsContactOpen(false)}
+        onClose={() => {}}
         className="relative z-50"
       >
         <div className="fixed inset-0 bg-black/30" aria-hidden="true" />
