@@ -239,6 +239,7 @@ export const servicesService = {
   book: async (payload: BookingPayload): Promise<BookingResponsePayement> => {
     try {
       const response = await API.post<BookingResponsePayement>('/appointments', payload);
+      console.log(response);
       return response.data;
     } catch (error: any) {
 
@@ -253,7 +254,7 @@ export const servicesService = {
   login: async (payload: Login): Promise<BookingResponse> => {
   try {
       const response = await API.post<BookingResponse>('/client/login', payload);
-      console.log("ettooo user ",response.data);
+      // console.log("ettooo user ",response.data);
       return response.data;
     } catch (error: any) {
       if (error.response && error.response.data) {
@@ -266,7 +267,7 @@ export const servicesService = {
   verificationcreneau: async (payload: BookingVerification): Promise<ResponseVerification> => {
   try {
       const response = await API.post<ResponseVerification>('/checkcreneau', payload);
-      console.log("verification ",response.data);
+      // console.log("verification ",response.data);
       return response.data;
       
     } catch (error: any) {
