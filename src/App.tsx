@@ -32,10 +32,12 @@ import PromoBanner from './components/Promo';
 import OrangeMoney from './components/OrangeMoney';
 import ChoiceClientModal from './components/ChoiceClientModal';
 import PaymentInfo from './components/PaymentInfo';
+import PaymentInfoReview from './components/PaymentInfoReview';
+import Details from './components/ServiceDetail/Details';
 
 import { Document, Page, pdfjs } from "react-pdf";
-
 registerLocale("fr", fr);
+
 
 pdfjs.GlobalWorkerOptions.workerSrc = `//cdnjs.cloudflare.com/ajax/libs/pdf.js/${pdfjs.version}/pdf.worker.min.js`;
 
@@ -51,7 +53,11 @@ function App() {
   const [selectedMassageType, setSelectedMassageType] = useState('');
   const [selectedDate, setSelectedDate] = useState<Date | null>(null);
   const [selectedTime, setSelectedTime] = useState('');
+
   const [selectedProvider, setSelectedProvider] = useState('');
+  const [filteredProviders, setFilteredProviders] = useState<Employee[]>([]);
+
+
   const [showSportDetails, setShowSportDetails] = useState(false);
   const [selectedShowService, setSelectedShowService] = useState('');
   const [showServices, setShowServices] = useState(false);
@@ -73,6 +79,11 @@ function App() {
   const [cgvScrolledToEnd, setCgvScrolledToEnd] = useState(false);
 
   const [showPaymentModal, setShowPaymentModal] = useState(false);
+
+  const [preSelectedService, setPreSelectedService] = useState<string | null>(null);
+  const [preSelectedMassageType, setPreSelectedMassageType] = useState<string | null>(null);
+
+  const [contact, setContact] = useState(false);
 
   const rgcRef = useRef<HTMLDivElement>(null);
   const cgvRef = useRef<HTMLDivElement>(null);
@@ -157,12 +168,38 @@ function App() {
   const [showPaymentChoice, setShowPaymentChoice] = useState(false);
   const [selectedMethod, setSelectedMethod] = useState<'mvola' | 'stripe' | 'orange'| null>(null);
 
+  // useEffect(() => {
+  //   if (selectedProviderId && selectedDate) {
+  //     fetchCreneaux(selectedProviderId, selectedDate);
+  //     setSelectedCreneauId(null); 
+  //   }
+  // }, [selectedProviderId, selectedDate]);
+
+  // -------- eto 
+  useEffect(() => {
+    if (selectedMassageType) {
+      setSelectedProviderId(null);
+      setSelectedCreneauId(null);
+      const availableProviders = employees.filter(provider =>
+        provider.services?.some(s => s.id === Number(selectedMassageType))
+      );
+
+      setFilteredProviders(availableProviders);
+      setAvailableCreneaux([]);
+    }
+  }, [selectedMassageType]);
+
   useEffect(() => {
     if (selectedProviderId && selectedDate) {
+      setSelectedCreneauId(null);
       fetchCreneaux(selectedProviderId, selectedDate);
-      setSelectedCreneauId(null); 
+    } else {
+      setAvailableCreneaux([]);
     }
   }, [selectedProviderId, selectedDate]);
+
+
+  // ----fin eto 
 
   useEffect(() => {
     localStorage.setItem('showList', JSON.stringify(showList));
@@ -230,10 +267,15 @@ function App() {
     }
   }, [paiement]);
 
+  useEffect(() => {
+    console.log("selectedMassageType a changé :", selectedMassageType);
+    console.log("service a changé :", selectedService);
+  }, [selectedMassageType, selectedService, preSelectedMassageType, preSelectedService]);
+
 
   const refreshPage = () => {
       navigate(0);
-  }
+  } 
 
   useEffect(() => {
     fetch("/CGV.html")
@@ -249,11 +291,21 @@ function App() {
       .catch((error) => console.error('Erreur lors du chargement RGC:', error));
   }, []);
 
+
+  const handleCloseModal = () => {
+    setSelectedService('');
+    setSelectedMassageType('');
+    setPreSelectedService(null);
+    setPreSelectedMassageType(null);
+    setSelectedProvider('');
+    setIsBookingOpen(false); 
+  };
+
+
   const handleRgcScroll = () => {
     if (rgcRef.current) {
       const { scrollTop, scrollHeight, clientHeight } = rgcRef.current;
       if (scrollTop + clientHeight >= scrollHeight - 1) { 
-        // console.log("RGC scrolled to end");
         setRgcScrolledToEnd(true);
       }
     }
@@ -268,6 +320,16 @@ function App() {
       }
     }
   };
+
+  const resetFormData = () => setFormData({
+    name: '',
+    phone: '',
+    email: '',
+    address: '',
+    password: '',
+    confirmPassword: '',
+    notes: ''
+  });
 
   //   if (users) {
   //     localStorage.setItem("user", JSON.stringify(users));
@@ -377,12 +439,11 @@ function App() {
         setAppointments(response.appointments);
         setSubscriptions(response.subscriptions);
 
-        // Gérer la redirection selon la source du login
         if (loginSource === "booking") {
           fillBookingFormWithUserData(users);
           setIsLoginOpen(false);
           setIsBookingOpen(true);
-          // console.log("Redirection vers booking avec formulaire pré-rempli");
+
         } else if (loginSource === "account") {
           setShowList(true);
           setIsLoginOpen(false);
@@ -395,7 +456,7 @@ function App() {
       }
     };
 
-    const fillBookingFormWithUserData = (userData: User) => {
+  const fillBookingFormWithUserData = (userData: User) => {
       setFormData({
         name: userData.name || '',
         phone: userData.phone || '',
@@ -405,7 +466,9 @@ function App() {
         confirmPassword: '',
         notes: ''
       });
-      // console.log("Formulaire pré-rempli avec les données utilisateur:", userData);
+
+      setSelectedService(preSelectedService || '');
+      setSelectedMassageType(preSelectedMassageType || '');
     };
 
   const handleClientChoice = async (source: "account" | "booking", users?: any) => {
@@ -437,6 +500,8 @@ function App() {
 
   const resetBookingModal = () => {
     setFromSubscription(false);
+    // setPreSelectedMassageType(null);
+    // setPreSelectedService(null);
     setSelectedSubId(null);
     setSelectedService('');
     setSelectedMassageType('');
@@ -448,7 +513,6 @@ function App() {
     
     setAvailableCreneaux([]);
   };
-
 
   const handleLogout = () => {
       setShowMenu(true);
@@ -543,7 +607,6 @@ function App() {
       const selectedCreneauObj = selectedProviderObj?.creneaux.find(
         (c) => Number(c.id) === selectedCreneauId
       );
-      // console.log("heure selectionné",selectedCreneauId);
       const startDateTime = `${format(selectedDate, 'yyyy-MM-dd')} ${selectedCreneauObj?.creneau}`;
       const payload: BookingPayload = {
         clients: {
@@ -562,7 +625,7 @@ function App() {
         from_subscription: !!selectedSubId && Number(selectedSubId) > 0
       };
 
-      console.log("ettoo no  alefa",payload);
+      // console.log("ettoo no  alefa",payload);
       const result = await servicesService.book(payload);
       if (result.success && result.data) {
           setPaiement(result.data);
@@ -616,7 +679,19 @@ function App() {
   };
 
   const handleBookNow = (service: string) => {
+    setPreSelectedService(service);
     setSelectedService(service);
+    setShowServices(false);
+    setShowSportDetails(false);
+    setShowCareDetails(false);
+    // setIsBookingOpen(true);
+  };
+
+  const handleBookNowPrestation = (service: string , prestation : string) => {
+    setPreSelectedService(service);
+    setPreSelectedMassageType(prestation);
+    setSelectedService(service);
+    setSelectedMassageType(prestation);
     setShowServices(false);
     setShowSportDetails(false);
     setShowCareDetails(false);
@@ -726,7 +801,6 @@ function App() {
     setSelectedService(subscription.formule);
     const selectedServiceData = services.find(service => service.title === subscription.formule);
     const serviceTypes: ServiceType[] = selectedServiceData?.details?.types || [];
-
     if (serviceTypes.length === 0) {
       console.warn('Aucun type de service disponible pour cette formule');
       setSelectedProvider('');
@@ -739,9 +813,9 @@ function App() {
     );
 
     if (exactMatch) {
-
       setSelectedMassageType(exactMatch.id);
       console.log(`Service présélectionné (correspondance exacte): ${exactMatch.title}`);
+
     } else {
       const partialMatch: ServiceType | undefined = serviceTypes.find(
         (type: ServiceType) =>
@@ -951,8 +1025,10 @@ function App() {
       </div>
   );
 
-  const renderBookingForm = () => (
-
+  const renderBookingForm = () => {
+    const isServiceDisabled = Boolean(preSelectedService);
+    const isMassageTypeDisabled = Boolean(preSelectedMassageType);
+     return (
     <div className="max-h-[80vh] overflow-y-auto px-4">
     <form 
         onSubmit={handleBooking} 
@@ -969,7 +1045,6 @@ function App() {
               setSelectedService(e.target.value);
               setSelectedMassageType('');
               setSelectedProvider('');
-              
             }}
             className="w-full rounded-md border border-gray-300 px-2 py-1 focus:outline-none focus:ring-2 focus:ring-[#f18f34]"
             required
@@ -1000,11 +1075,11 @@ function App() {
               disabled={fromSubscription} 
             >
               <option value="">Sélectionnez une prestation</option>
-              {getServiceTypes().map((type, index) => (
-                <option key={index} value={type.id}>
-                  {type.title} - {type.price_promo ? type.price_promo : type.price}
-                </option>
-              ))}
+            {getServiceTypes().map((type, index) => (
+              <option key={index} value={type.id}>
+                {type.title} - {type.price_promo ? type.price_promo : type.price}
+              </option>
+            ))}
             </select>
           </div>
         )}
@@ -1034,7 +1109,72 @@ function App() {
             }
           />
         </div>
-        {selectedMassageType   && (
+        {selectedMassageType && (
+          <div className="mt-4">
+            <label className="block text-sm font-medium text-gray-700 mb-2">
+              Sélectionnez un prestataire *
+            </label>
+            <div className="grid grid-cols-2 md:grid-cols-2 gap-2">
+              {filteredProviders.length > 0 ? (
+                filteredProviders.map((provider) => (
+                  <div
+                    key={provider.id}
+                    className={`border rounded-lg p-1 text-center shadow-xs cursor-pointer transition hover:shadow-md text-sm font-medium ${
+                      selectedProviderId === provider.id.toString()
+                        ? 'border-[#f18f34] bg-orange-50'
+                        : 'border-gray-200 bg-white'
+                    }`}
+                    onClick={() => {
+                      setSelectedProviderId(provider.id.toString());
+                      setSelectedCreneauId(null); 
+                    }}
+                  >
+                    <span className="truncate block text-xs font-medium text-gray-700">
+                      {provider.name}
+                    </span>
+                  </div>
+                ))
+              ) : (
+                <p className="text-xs text-gray-500 col-span-2">
+                  Aucun prestataire disponible
+                </p>
+              )}
+            </div>
+
+            {selectedProviderId && availableCreneaux.length > 0 ? (
+              <div className="mt-4">
+                <label className="block text-sm font-medium text-gray-700 mb-1">
+                  Créneaux disponibles *
+                </label>
+                <div className="flex flex-wrap gap-1">
+                  {availableCreneaux.map((creneau) => (
+                    <button
+                      key={creneau.id}
+                      type="button"
+                      onClick={() => !creneau.is_taken && setSelectedCreneauId(creneau.id)}
+                      className={`px-1 py-0 rounded-md text-xs border transition-colors ${
+                        selectedCreneauId === creneau.id
+                          ? 'bg-[#f18f34] text-white border-[#f18f34]'
+                          : creneau.is_taken
+                            ? 'bg-gray-200 text-gray-400 cursor-not-allowed border-gray-300'
+                            : 'bg-gray-100 text-black border-gray-200 hover:bg-gray-200'
+                      }`}
+                      disabled={creneau.is_taken}
+                      aria-disabled={creneau.is_taken}
+                      title={creneau.is_taken ? 'Indisponible' : 'Disponible'}
+                    >
+                      {creneau.time}
+                    </button>
+                  ))}
+                </div>
+              </div>
+            ) : selectedProviderId ? (
+              <p className="text-xs text-gray-500 mt-2">Aucun créneau disponible</p>
+            ) : null}
+          </div>
+        )}
+
+        {/* {selectedMassageType   && (
           <div className="mt-4">
             <label className="block text-sm font-medium text-gray-700 mb-2">
               Sélectionnez un prestataire *
@@ -1105,7 +1245,7 @@ function App() {
               )}
 
           </div>
-        )}
+        )} */}
       </div>
 
       <div className="space-y-4">
@@ -1253,8 +1393,9 @@ function App() {
       </div>
     </form>
     </div>
-  );
+  )};
 
+  
   if (showList) {
     return (
       <div className="min-h-screen bg-white px-4 py-8">
@@ -1270,6 +1411,25 @@ function App() {
             ← Retour à l'accueil
           </button>
           <div className="flex items-center gap-2">
+            <button
+              onClick={() => {
+                setContact(true);
+              }}
+              className="bg-[#f18f34] px-4 py-2 text-dark font-semibold rounded-full  h-9 md:h-9 text-sm sm:text-base md:text-lg cursor-pointer focus:outline-none"
+              style={{ fontFamily: "Agency FB, sans-serif" }}
+            >
+              Coordonnées de paiement
+            </button>
+
+            {contact && (
+              <PaymentInfoReview
+                isOpen={contact}
+                setIsOpen={setContact}
+                choicePaiement={false}
+                setChoicePaiement={() => {}}
+                price={undefined}
+              />
+            )}
             <select
               defaultValue=""
               onChange={(e) => {
@@ -1277,7 +1437,7 @@ function App() {
                 else if (e.target.value === "logout") handleLogout();
                 e.target.value = "";
               }}
-              className="bg-white text-dark px-4 py-2 rounded-full text-sm sm:text-base md:text-lg cursor-pointer focus:outline-none"
+              className="bg-white text-dark px-4 py-2 rounded-full text-sm sm:text-base md:text-lg cursor-pointer  h-9 md:h-9 focus:outline-none "
               style={{ fontFamily: "Agency FB, sans-serif" }}
             >
               <option value="" disabled>👤 Mon compte</option>
@@ -1285,10 +1445,7 @@ function App() {
               <option value="logout">Déconnexion</option>
             </select>
           </div>
-
-
         </div>
-
         <nav className="relative z-10 flex items-center justify-between px-6 py-4 max-w-7xl mx-auto">
           <div className="flex items-center">
             {logo && (
@@ -1346,7 +1503,6 @@ function App() {
                     <td className="px-6 py-4 sticky right-0 bg-white z-10">
                       <button
                         onClick={() => {
-                          
                           setShowList(false);
                           setIsLoginOpen(false);
                           handleSubscriptionBooking(sub);
@@ -1362,7 +1518,6 @@ function App() {
               </table>
             </div>
 
-            {/* liste des rendez-vous */}
              <AppointmentsTable appointments={appointments} />
 
           </div>
@@ -1373,135 +1528,201 @@ function App() {
 
   if (showServices && selectedShowService) {
     const service = services.find(
-      s => s.title.toLowerCase().trim() === selectedShowService.toLowerCase().trim()
+      (s) =>
+        s.title.toLowerCase().trim() ===
+        selectedShowService.toLowerCase().trim()
     );
-    console.log(service);
 
     if (!service) {
-         return <div>Service introuvable.</div>;
+      return <div>Service introuvable.</div>;
     }
+
     return (
-      <div className="min-h-screen bg-white">
-        <div className="max-w-7xl mx-auto px-4 py-8">
-          <button
-            onClick={() => setShowServices(false)}
-            className="flex items-center text-gray-600 hover:text-gray-900 mb-8"
-          >
-            <ChevronLeft className="w-5 h-5 mr-2" />
-            Retour
-          </button>
-          <div className="grid md:grid-cols-2 gap-12">
-            <div>
-              <h1 className="mx-auto text-4xl mb-5 text-[#1d1d1b] text-center" style={{ fontFamily: 'Agency FB, sans-serif' }}>
-                {service.title}
-              </h1>
-              <img
-                src={service.image}
-                alt={service.title}
-                className="w-full h-[400px] object-cover rounded-2xl"
-              />
-              <button
-                onClick={() =>{
-                    handleBookNow(service.title);
-                    const user = localStorage.getItem("user");
-                    const userId = localStorage.getItem("user_id");
-                    if (user && userId) {
-                      setIsBookingOpen(true);
-                    } else {
-                      setChoiceClient(true);
-                    }
-                  }}
-                className="mx-auto bg-[#f18f34] hover:bg-[#f9b131] text-black px-4 py-1 rounded-full transition-colors flex items-center justify-center"
-                style={{ fontFamily: 'Agency FB, sans-serif', display: 'block' }}
-              >
-                Réserver 
-              </button>
-
-            </div>
-            <div>
-              <div className="mb-8">
-                <div className="space-y-4">
-                  {Array.isArray(service.details?.types) &&
-                   service.details.types.map((type, index) => (
-                    <div key={index} className="bg-gray-50 p-4 rounded-lg ">
-                      <div className="mb-1 flex items-center gap-1">
-                        {type.price_promo && (
-                          <span className="inline-flex items-center gap-1 bg-red-500 text-white text-xs font-semibold px-2 py-1 rounded-full shadow-sm">
-                            <Sparkles className="w-2 h-2" />
-                            Promotion
-                          </span>
-                        )}
-                          <button className="bg-[#f18f34] hover:bg-[#f9b131] text-dark text-sm font-medium px-3 py-1 rounded-md shadow ml-auto"
-                                style={{ fontFamily: 'Agency FB, sans-serif' }}>
-                            Réserver
-                          
-                          </button>
-                      </div>
-                      <div className="flex justify-between items-center mb-2">
-                          <h3 className="text-lg font-semibold" translate="no">{type.title}</h3>
-                          <div className="flex items-center gap-3">
-                            {type.price_promo ? (
-                              <>
-                                <span className="inline-flex items-center gap-2">
-                                  <span className="line-through text-gray-400">
-                                    {type.price}
-                                    {Number(type.validity_days) === 30 ? '' : ''}
-                                  </span>
-                                  <span className="text-[#f18f34] font-semibold">
-                                    {type.price_promo}
-                                    {Number(type.validity_days) === 30 ? '/mois' : ''}
-                                  </span>
-
-                                </span>
-                              </>
-                            ) : (
-                              <span className="text-[#f18f34] font-semibold">
-                                {type.price}
-                                {Number(type.validity_days) === 30 ? '/mois' : ''}
-                              </span>
-                            )}
-                        </div>
-                      </div>
-                      <div className="flex items-center text-gray-500 text-sm justify-between">
-                        <div dangerouslySetInnerHTML={{ __html: type.description }} />
-                        {type.sessions.some(session => parseInt(session.session_per_period) > 0) && (
-                          <div className="ml-auto">
-                            <button
-                              onClick={() => handleShowTypeDetails(type)}
-                              title='Afficher détails'
-                              className="w-fit bg-white hover:bg-grey text-black px-4 py-1 rounded-full transition-colors flex items-center justify-center gap-1"
-                              // style={{ fontFamily: 'Agency FB, sans-serif' }}
-                            >
-                            <ChevronDown 
-                              className={`w-6 h-6 transition-transform duration-300 ${selectedType?.id === type.id ? 'rotate-180' : ''}`} 
-                            />
-                            </button>
-                          </div>
-                        )}
-                      </div>
-                      {selectedType?.title === type.title && (
-                        <div className="mt-4 p-4 bg-[#f9b131] from-orange-100 to-white border border-orange-300 rounded-xl">
-                          <div dangerouslySetInnerHTML={{ __html: type.detail }} />
-                        </div>
-                      )}
-                    </div>
-                  ))}
-                </div>
-                <div style={{ fontFamily: 'Agency FB, sans-serif', display: 'block' }} >{service.remarque}</div>
-              </div>
-            </div>
-          </div>
-        </div>
-      </div>
+      <Details
+        showServices={showServices}
+        selectedShowService={selectedShowService}
+        services={services}
+        setShowServices={setShowServices}
+        setIsBookingOpen={setIsBookingOpen}
+        setChoiceClient={setChoiceClient}
+        handleBookNowPrestation={handleBookNowPrestation}
+        handleShowTypeDetails={handleShowTypeDetails}
+        selectedService={selectedService}
+        selectedMassageType={selectedMassageType}
+        selectedType={selectedType}
+      />
     );
-  }
+}
+
+
+  // if (showServices && selectedShowService) {
+  //   console.log("etttoooo");
+  //   const service = services.find(
+  //     s => s.title.toLowerCase().trim() === selectedShowService.toLowerCase().trim()
+  //   );
+  //   if (!service) {
+  //        return <div>Service introuvable.</div>;
+  //   }
+  //   <Details
+  //       showServices={showServices}
+  //       selectedShowService={selectedShowService}
+  //       services={services}
+  //       setShowServices={setShowServices}
+  //       setIsBookingOpen={setIsBookingOpen}
+  //       setChoiceClient={setChoiceClient}
+  //       handleBookNowPrestation={handleBookNowPrestation}
+  //       handleShowTypeDetails={handleShowTypeDetails}
+  //       selectedService={selectedService}
+  //       selectedMassageType={selectedMassageType}
+  //       selectedType={selectedType}
+  //     />
+  //   // return (
+  //   //   <div className="min-h-screen bg-white">
+  //   //     <div className="max-w-7xl mx-auto px-4 py-8">
+  //   //       <button
+  //   //         onClick={() => setShowServices(false)}
+  //   //         className="flex items-center text-gray-600 hover:text-gray-900 mb-8"
+  //   //       >
+  //   //         <ChevronLeft className="w-5 h-5 mr-2" />
+  //   //         Retour
+  //   //       </button>
+  //   //       <div className="grid md:grid-cols-2 gap-12">
+  //   //         <div>
+  //   //           <h1 className="mx-auto text-4xl mb-5 text-[#1d1d1b] text-center" style={{ fontFamily: 'Agency FB, sans-serif' }}>
+  //   //             {service.title}
+  //   //           </h1>
+  //   //           <img
+  //   //             src={service.image}
+  //   //             alt={service.title}
+  //   //             className="w-full h-[400px] object-cover rounded-2xl"
+  //   //           />
+  //   //           {/* <button
+  //   //             onClick={() =>{
+  //   //                 handleBookNow(service.title);
+  //   //                 const user = localStorage.getItem("user");
+  //   //                 const userId = localStorage.getItem("user_id");
+
+  //   //                 if (user && userId) {
+  //   //                   setIsBookingOpen(true);
+  //   //                 } else {
+  //   //                   setChoiceClient(true);
+  //   //                 }
+  //   //               }}
+  //   //             className="mx-auto bg-[#f18f34] hover:bg-[#f9b131] text-black px-4 py-1 rounded-full transition-colors flex items-center justify-center"
+  //   //             style={{ fontFamily: 'Agency FB, sans-serif', display: 'block' }}
+  //   //           >
+  //   //             Réserver 
+  //   //           </button> */}
+
+  //   //         </div>
+  //   //         <div>
+  //   //           <div className="mb-8">
+  //   //             <div className="space-y-4">
+  //   //               {Array.isArray(service.details?.types) &&
+  //   //                service.details.types
+  //   //                 .filter(type => {
+  //   //                   if (!selectedService) return true;
+  //   //                   if (selectedService && !selectedMassageType) {
+  //   //                     return selectedService === service.title;
+  //   //                   }
+  //   //                   return selectedService === service.title && selectedMassageType === type.id;
+  //   //                 })
+
+  //   //                 // .filter(type => {
+  //   //                 //   if (selectedService && !selectedMassageType) return true;
+  //   //                 //   if (!selectedService || !selectedMassageType) return true;
+
+  //   //                 //   return selectedService === service.title && selectedMassageType === type.id;
+
+  //   //                 // })
+  //   //                .map((type, index) => (
+  //   //                 <div key={index} className="bg-gray-50 p-4 rounded-lg ">
+  //   //                   <div className="mb-1 flex items-center gap-1">
+  //   //                     {type.price_promo && (
+  //   //                       <span className="inline-flex items-center gap-1 bg-red-500 text-white text-xs font-semibold px-2 py-1 rounded-full shadow-sm">
+  //   //                         <Sparkles className="w-2 h-2" />
+  //   //                         Promotion
+  //   //                       </span>
+  //   //                     )}
+  //   //                       <button
+  //   //                         onClick={() => {
+  //   //                           handleBookNowPrestation(service.title, type.id);
+  //   //                           const user = localStorage.getItem("user");
+  //   //                           const userId = localStorage.getItem("user_id");
+
+  //   //                           if (user && userId) {
+  //   //                             setIsBookingOpen(true);
+  //   //                           } else {
+  //   //                             setChoiceClient(true);
+  //   //                           }
+  //   //                         }}
+  //   //                         className="bg-[#f18f34] hover:bg-[#f9b131] text-dark text-sm font-medium px-3 py-1 rounded-md shadow ml-auto"
+  //   //                             style={{ fontFamily: 'Agency FB, sans-serif' }}>
+  //   //                         Réserver
+  //   //                       </button>
+  //   //                   </div>
+  //   //                   <div className="flex justify-between items-center mb-2">
+  //   //                       <h3 className="text-lg font-semibold" translate="no">{type.title}</h3>
+  //   //                       <div className="flex items-center gap-3">
+  //   //                         {type.price_promo ? (
+  //   //                           <>
+  //   //                             <span className="inline-flex items-center gap-2">
+  //   //                               <span className="line-through text-gray-400">
+  //   //                                 {type.price}
+  //   //                                 {Number(type.validity_days) === 30 ? '' : ''}
+  //   //                               </span>
+  //   //                               <span className="text-[#f18f34] font-semibold">
+  //   //                                 {type.price_promo}
+  //   //                                 {Number(type.validity_days) === 30 ? '/mois' : ''}
+  //   //                               </span>
+
+  //   //                             </span>
+  //   //                           </>
+  //   //                         ) : (
+  //   //                           <span className="text-[#f18f34] font-semibold">
+  //   //                             {type.price}
+  //   //                             {Number(type.validity_days) === 30 ? '/mois' : ''}
+  //   //                           </span>
+  //   //                         )}
+  //   //                     </div>
+  //   //                   </div>
+  //   //                   <div className="flex items-center text-gray-500 text-sm justify-between">
+  //   //                     <div dangerouslySetInnerHTML={{ __html: type.description }} />
+  //   //                     {type.sessions.some(session => parseInt(session.session_per_period) > 0) && (
+  //   //                       <div className="ml-auto">
+  //   //                         <button
+  //   //                           onClick={() => handleShowTypeDetails(type)}
+  //   //                           title='Afficher détails'
+  //   //                           className="w-fit bg-white hover:bg-grey text-black px-4 py-1 rounded-full transition-colors flex items-center justify-center gap-1"
+  //   //                           // style={{ fontFamily: 'Agency FB, sans-serif' }}
+  //   //                         >
+  //   //                         <ChevronDown 
+  //   //                           className={`w-6 h-6 transition-transform duration-300 ${selectedType?.id === type.id ? 'rotate-180' : ''}`} 
+  //   //                         />
+  //   //                         </button>
+  //   //                       </div>
+  //   //                     )}
+  //   //                   </div>
+  //   //                   {selectedType?.title === type.title && (
+  //   //                     <div className="mt-4 p-4 bg-[#f9b131] from-orange-100 to-white border border-orange-300 rounded-xl">
+  //   //                       <div dangerouslySetInnerHTML={{ __html: type.detail }} />
+  //   //                     </div>
+  //   //                   )}
+  //   //                 </div>
+  //   //               ))}
+  //   //             </div>
+  //   //             <div style={{ fontFamily: 'Agency FB, sans-serif', display: 'block' }} >{service.remarque}</div>
+  //   //           </div>
+  //   //         </div>
+  //   //       </div>
+  //   //     </div>
+  //   //   </div>
+  //   // );
+  // }
 
   return (
     <div className="min-h-screen bg-white mb-5">
-      {/* Hero Section */}
       <header className="relative h-screen">
-        {/* Image de fond */}
-        {/* bg-cover bg-center */}
         <div 
           className="absolute inset-0 bg-cover bg-center bg-black/10"
           style={{ backgroundImage: `url(${back})`, backgroundPosition: 'center 15%' }}
@@ -1687,7 +1908,9 @@ function App() {
       <Dialog
         open={isBookingOpen}
         // onClose={() => setIsBookingOpen(false)}
-        onClose={() => {}}
+        onClose={() =>{ {};
+        handleCloseModal;
+      }}
         className="relative z-50"
       >
         <div className="fixed inset-0 bg-black/30" aria-hidden="true" />
@@ -1727,6 +1950,9 @@ function App() {
           resetBookingForm={resetBookingForm}
           handleClientChoice={handleClientChoice}
           fillBookingFormWithUserData={fillBookingFormWithUserData}
+          resetFormData={resetFormData}
+          setSelectedService={setSelectedService}
+          setSelectedMassageType={setSelectedMassageType}
         />
       )}
 
