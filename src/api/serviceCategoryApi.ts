@@ -233,6 +233,7 @@ export interface Appointmentsall {
 export const servicesService = {
   all: async (): Promise<ServicesWithEmployee> => {
     const response = await API.get<ServicesWithEmployee>('/service-category'); 
+    console.log("service",response.data);
     return response.data;
   },
 
