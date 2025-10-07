@@ -1380,15 +1380,24 @@ function App() {
           className="w-full bg-[#f9b131] hover:bg-[#f18f34] text-white px-4 py-3 rounded-full transition-colors flex items-center justify-center gap-2 disabled:opacity-50 disabled:cursor-not-allowed"
           style={{ fontFamily: 'Agency FB, sans-serif' }}
         >
-          <CreditCard className="w-5 h-5" />
-          {loading ? (
-            <>
-              <span className="inline-block w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin"></span>
-              Traitement en cours...
-            </>
-          ) : (
-            'Procéder au paiement'
-          )}
+        {fromSubscription ? (
+          <span className="flex items-center gap-2">
+            <Check className="w-5 h-5" />
+            Valider 
+          </span>
+        ) : (
+          <>
+            <CreditCard className="w-5 h-5" />
+            {loading ? (
+              <>
+                <span className="inline-block w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin"></span>
+                Traitement en cours...
+              </>
+            ) : (
+              'Procéder au paiement'
+            )}
+          </>
+        )}
         </button>
       </div>
     </form>
@@ -1399,7 +1408,57 @@ function App() {
   if (showList) {
     return (
       <div className="min-h-screen bg-white px-4 py-8">
-        <div className="bg-gray-50 px-4 py-2 text-sm text-gray-700 flex items-center justify-between">
+        <div className="bg-gray-50 px-4 py-2 text-sm text-gray-700 flex flex-wrap items-center justify-between gap-3">
+          <button
+            onClick={() => {
+              setShowList(false);
+              setIsLoginOpen(false);
+              refreshPage();
+            }}
+            className="text-[#f18f34] font-semibold hover:underline whitespace-nowrap"
+          >
+            ← Retour à l'accueil
+          </button>
+
+          <div className="flex items-center gap-3 flex-wrap justify-end">
+            <button
+              onClick={() => setContact(true)}
+              className="bg-[#f18f34] text-dark font-semibold rounded-full text-sm sm:text-base cursor-pointer focus:outline-none px-4 h-10 flex items-center"
+              style={{ fontFamily: 'Agency FB, sans-serif' }}
+            >
+              Coordonnées de paiement
+            </button>
+
+            <select
+              defaultValue=""
+              onChange={(e) => {
+                if (e.target.value === 'profile') handleProfileClick();
+                else if (e.target.value === 'logout') handleLogout();
+                e.target.value = '';
+              }}
+              className="bg-white text-dark font-semibold rounded-full text-sm sm:text-base cursor-pointer focus:outline-none px-4 h-10 flex items-center"
+              style={{ fontFamily: 'Agency FB, sans-serif' }}
+            >
+              <option value="" disabled>👤 Mon compte</option>
+              <option value="profile">Voir profil</option>
+              <option value="logout">Déconnexion</option>
+            </select>
+          </div>
+
+          {contact && (
+            <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40">
+              <PaymentInfoReview
+                isOpen={contact}
+                setIsOpen={setContact}
+                choicePaiement={false}
+                setChoicePaiement={() => {}}
+                price={undefined}
+              />
+            </div>
+          )}
+        </div>
+
+        {/* <div className="bg-gray-50 px-4 py-2 text-sm text-gray-700 flex flex-wrap items-center justify-between">
           <button
             onClick={() => {
               setShowList(false);
@@ -1415,7 +1474,7 @@ function App() {
               onClick={() => {
                 setContact(true);
               }}
-              className="bg-[#f18f34] px-4 py-2 text-dark font-semibold rounded-full  h-9 md:h-9 text-sm sm:text-base md:text-lg cursor-pointer focus:outline-none"
+              className="bg-[#f18f34] px-4 py-2 text-dark font-semibold rounded-full  h-9 text-sm sm:text-base md:text-lg cursor-pointer focus:outline-none"
               style={{ fontFamily: "Agency FB, sans-serif" }}
             >
               Coordonnées de paiement
@@ -1445,7 +1504,7 @@ function App() {
               <option value="logout">Déconnexion</option>
             </select>
           </div>
-        </div>
+        </div> */}
         <nav className="relative z-10 flex items-center justify-between px-6 py-4 max-w-7xl mx-auto">
           <div className="flex items-center">
             {logo && (
@@ -1739,7 +1798,7 @@ function App() {
                 <div className="whitespace-nowrap animate-marquee text-white font-bold text-xl sm:text-base md:text-lg  relative z-10 tracking-wider" style={{ fontFamily: 'Agency FB, sans-serif',
                    WebkitTextStroke: '0.5px white'
                 }}>
-                    OFFRE SPÉCIALE LANCEMENT -25% sur toutes les prestations du 20/09 au 20/10/2025
+                    OFFRE SPÉCIALE LANCEMENT -25% sur toutes les prestations du 20/09 au 30/10/2025
                 </div>
             </div>
         </div>
