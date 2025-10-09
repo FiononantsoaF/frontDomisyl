@@ -860,7 +860,7 @@ function App() {
                 </label>
               </div>
                 <div className="flex flex-col md:flex-row gap-4 justify-center mt-4">
-                  {showPaymentModal && <PaymentInfo isOpen={showPaymentModal} setIsOpen={setShowPaymentModal} choicePaiement={showPaymentChoice} setChoicePaiement={setShowPaymentChoice} price={paiement?.price}/>}
+                  {showPaymentModal && <PaymentInfo isOpen={showPaymentModal} setIsOpen={setShowPaymentModal} choicePaiement={showPaymentChoice} setChoicePaiement={setShowPaymentChoice} price={paiement?.price_promo ?? paiement?.price}/>}
 
                   {/* <button
                     onClick={() => setSelectedMethod('mvola')}
@@ -1394,7 +1394,7 @@ function App() {
                 Traitement en cours...
               </>
             ) : (
-              'Procéder au paiement'
+              'Réserver'
             )}
           </>
         )}
