@@ -12,11 +12,12 @@ interface PaymentInfoProps {
 }
 
 export default function PaymentInfo({ isOpen, setIsOpen,choicePaiement, setChoicePaiement , price }:PaymentInfoProps) {
+  console.log("price dans paymentinfo", price);
   const navigate = useNavigate();
   const handleClose = () => {
     setIsOpen(false);     
     setChoicePaiement(false);
-    console.log("etttooooo") ;
+    window.location.reload();
     navigate("/");         
   };
   const mvolaNumber = "038 28 127 35";
@@ -44,7 +45,11 @@ export default function PaymentInfo({ isOpen, setIsOpen,choicePaiement, setChoic
             Votre rendez-vous a été enregistré avec succès.  
             Il sera confirmé dès réception du paiement d’un montant total:{" "}
             <strong className="text-dark-800 font-bold text-xl">
-                {Number(price).toLocaleString("fr-FR", { minimumFractionDigits: 0, maximumFractionDigits: 0 })} Ar
+                {/* {Number(price).toLocaleString("fr-FR", { minimumFractionDigits: 0, maximumFractionDigits: 0 })} Ar */}
+                {Number(String(price).replace(/,/g, '')).toLocaleString("fr-FR", {
+                    minimumFractionDigits: 0,
+                    maximumFractionDigits: 0
+                })} Ar
             </strong>
         </p>
         <p className="mb-4 text-gray-800 text-sm">
