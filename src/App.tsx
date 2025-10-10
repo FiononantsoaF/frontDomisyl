@@ -167,6 +167,7 @@ function App() {
   const [response, setResponse] = useState<string | null>(null);
   const [showPaymentChoice, setShowPaymentChoice] = useState(false);
   const [selectedMethod, setSelectedMethod] = useState<'mvola' | 'stripe' | 'orange'| null>(null);
+  const [phoneError, setPhoneError] = useState<string | null>(null);
 
   // useEffect(() => {
   //   if (selectedProviderId && selectedDate) {
@@ -494,14 +495,11 @@ function App() {
       }
       setIsLoginOpen(false);
       setIsBookingOpen(true);
-      // console.log("Mode réservation activé");
     }
   };
 
   const resetBookingModal = () => {
     setFromSubscription(false);
-    // setPreSelectedMassageType(null);
-    // setPreSelectedService(null);
     setSelectedSubId(null);
     setSelectedService('');
     setSelectedMassageType('');
@@ -519,8 +517,8 @@ function App() {
       setShowList(false);
       setIsLoginOpen(false)
       localStorage.clear();
+      localStorage.removeItem('token');
       refreshPage();
-      // console.log("deconnexion");
   };
 
   const handleInputChange = async (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>) => {
@@ -537,6 +535,10 @@ function App() {
           } else {
             setAddressError(null);
           }
+    }
+    if (name === "phone") {
+          const valid = await servicesService.checkPhoneNumber(value);
+          setPhoneError(valid ? null : "Veuillez vérifier votre numéro !");
     }
   };
 
@@ -599,6 +601,10 @@ function App() {
     } 
     if(addressError != null){
       alert("Veuillez saisir une adresse valide");
+      return;
+    }
+    if(phoneError != null){
+      alert("Veuillez saisir un numéro de téléphone valide");
       return;
     }
     setLoading(true);
@@ -859,16 +865,16 @@ function App() {
                   J'accepte les <a href="/CGV.pdf" className="text-[#f18f34] underline">conditions générales de vente</a>
                 </label>
               </div>
-                <div className="flex flex-col md:flex-row gap-4 justify-center mt-4">
-                  {showPaymentModal && <PaymentInfo isOpen={showPaymentModal} setIsOpen={setShowPaymentModal} choicePaiement={showPaymentChoice} setChoicePaiement={setShowPaymentChoice} price={paiement?.price_promo ?? paiement?.price}/>}
+                <div className="flex flex-col md:flex-row gap-4 justify-center mt-4"> 
+                  {/* {showPaymentModal && <PaymentInfo isOpen={showPaymentModal} setIsOpen={setShowPaymentModal} choicePaiement={showPaymentChoice} setChoicePaiement={setShowPaymentChoice} price={paiement?.price_promo ?? paiement?.price}/>} */}
 
-                  {/* <button
+                  <button
                     onClick={() => setSelectedMethod('mvola')}
                     disabled={!acceptedCGV}
                     className="flex-1 bg-gradient-to-r from-[#f9b131] to-[#f18f34] hover:from-[#f18f34] hover:to-[#f9b131] text-dark px-4 py-3.5 rounded-lg transition-all flex items-center justify-center gap-2 disabled:opacity-50 disabled:cursor-not-allowed font-bold shadow-md hover:shadow-lg"
                   >
                     MVola
-                  </button> */}
+                  </button>
                   {/* Bouton Stripe commenté */}
                   {/* <button
                     onClick={() => setSelectedMethod('stripe')}
@@ -876,13 +882,13 @@ function App() {
                   >
                     Payer par Carte (Stripe)
                   </button> */}
-                  {/* <button
+                  <button
                     onClick={() => setSelectedMethod('orange')}
                     disabled={!acceptedCGV}
                     className="flex-1 bg-gradient-to-r from-[#f9b131] to-[#f18f34] hover:from-[#f18f34] hover:to-[#f9b131] text-dark px-4 py-3.5 rounded-lg transition-all flex items-center justify-center gap-2 disabled:opacity-50 disabled:cursor-not-allowed font-bold shadow-md hover:shadow-lg"
                   >
                     Orange Money
-                  </button> */}
+                  </button>
                 </div>
             </div>
           </div>
@@ -1277,6 +1283,7 @@ function App() {
             required
             readOnly={fromSubscription}
           />
+          {phoneError && <p className="text-red-500 text-sm mt-1">{phoneError}</p>}
         </div>
 
         <div>
@@ -1560,16 +1567,18 @@ function App() {
                     </td>
 
                     <td className="px-6 py-4 sticky right-0 bg-white z-10">
-                      <button
-                        onClick={() => {
-                          setShowList(false);
-                          setIsLoginOpen(false);
-                          handleSubscriptionBooking(sub);
-                        }}
-                        className="bg-[#f9b131] hover:bg-[#fdc800] text-[#1d1d1b] px-2 py-1 rounded-full flex items-center gap-1 transition-colors"
-                        style={{ fontFamily: 'Agency FB, sans-serif' }}>
-                        Prendre RDV
-                      </button>
+                       {sub.used_session < sub.total_session && (
+                          <button
+                            onClick={() => {
+                              setShowList(false);
+                              setIsLoginOpen(false);
+                              handleSubscriptionBooking(sub);
+                            }}
+                            className="bg-[#f9b131] hover:bg-[#fdc800] text-[#1d1d1b] px-2 py-1 rounded-full flex items-center gap-1 transition-colors"
+                            style={{ fontFamily: 'Agency FB, sans-serif' }}>
+                            Prendre RDV
+                          </button>
+                       )}
                     </td>
                   </tr>
                 ))}
@@ -1613,171 +1622,169 @@ function App() {
     );
 }
 
+  if (showServices && selectedShowService) {
+    const service = services.find(
+      s => s.title.toLowerCase().trim() === selectedShowService.toLowerCase().trim()
+    );
+    if (!service) {
+         return <div>Service introuvable.</div>;
+    }
+    <Details
+        showServices={showServices}
+        selectedShowService={selectedShowService}
+        services={services}
+        setShowServices={setShowServices}
+        setIsBookingOpen={setIsBookingOpen}
+        setChoiceClient={setChoiceClient}
+        handleBookNowPrestation={handleBookNowPrestation}
+        handleShowTypeDetails={handleShowTypeDetails}
+        selectedService={selectedService}
+        selectedMassageType={selectedMassageType}
+        selectedType={selectedType}
+      />
+    // return (
+    //   <div className="min-h-screen bg-white">
+    //     <div className="max-w-7xl mx-auto px-4 py-8">
+    //       <button
+    //         onClick={() => setShowServices(false)}
+    //         className="flex items-center text-gray-600 hover:text-gray-900 mb-8"
+    //       >
+    //         <ChevronLeft className="w-5 h-5 mr-2" />
+    //         Retour
+    //       </button>
+    //       <div className="grid md:grid-cols-2 gap-12">
+    //         <div>
+    //           <h1 className="mx-auto text-4xl mb-5 text-[#1d1d1b] text-center" style={{ fontFamily: 'Agency FB, sans-serif' }}>
+    //             {service.title}
+    //           </h1>
+    //           <img
+    //             src={service.image}
+    //             alt={service.title}
+    //             className="w-full h-[400px] object-cover rounded-2xl"
+    //           />
+    //           {/* <button
+    //             onClick={() =>{
+    //                 handleBookNow(service.title);
+    //                 const user = localStorage.getItem("user");
+    //                 const userId = localStorage.getItem("user_id");
 
-  // if (showServices && selectedShowService) {
-  //   console.log("etttoooo");
-  //   const service = services.find(
-  //     s => s.title.toLowerCase().trim() === selectedShowService.toLowerCase().trim()
-  //   );
-  //   if (!service) {
-  //        return <div>Service introuvable.</div>;
-  //   }
-  //   <Details
-  //       showServices={showServices}
-  //       selectedShowService={selectedShowService}
-  //       services={services}
-  //       setShowServices={setShowServices}
-  //       setIsBookingOpen={setIsBookingOpen}
-  //       setChoiceClient={setChoiceClient}
-  //       handleBookNowPrestation={handleBookNowPrestation}
-  //       handleShowTypeDetails={handleShowTypeDetails}
-  //       selectedService={selectedService}
-  //       selectedMassageType={selectedMassageType}
-  //       selectedType={selectedType}
-  //     />
-  //   // return (
-  //   //   <div className="min-h-screen bg-white">
-  //   //     <div className="max-w-7xl mx-auto px-4 py-8">
-  //   //       <button
-  //   //         onClick={() => setShowServices(false)}
-  //   //         className="flex items-center text-gray-600 hover:text-gray-900 mb-8"
-  //   //       >
-  //   //         <ChevronLeft className="w-5 h-5 mr-2" />
-  //   //         Retour
-  //   //       </button>
-  //   //       <div className="grid md:grid-cols-2 gap-12">
-  //   //         <div>
-  //   //           <h1 className="mx-auto text-4xl mb-5 text-[#1d1d1b] text-center" style={{ fontFamily: 'Agency FB, sans-serif' }}>
-  //   //             {service.title}
-  //   //           </h1>
-  //   //           <img
-  //   //             src={service.image}
-  //   //             alt={service.title}
-  //   //             className="w-full h-[400px] object-cover rounded-2xl"
-  //   //           />
-  //   //           {/* <button
-  //   //             onClick={() =>{
-  //   //                 handleBookNow(service.title);
-  //   //                 const user = localStorage.getItem("user");
-  //   //                 const userId = localStorage.getItem("user_id");
+    //                 if (user && userId) {
+    //                   setIsBookingOpen(true);
+    //                 } else {
+    //                   setChoiceClient(true);
+    //                 }
+    //               }}
+    //             className="mx-auto bg-[#f18f34] hover:bg-[#f9b131] text-black px-4 py-1 rounded-full transition-colors flex items-center justify-center"
+    //             style={{ fontFamily: 'Agency FB, sans-serif', display: 'block' }}
+    //           >
+    //             Réserver 
+    //           </button> */}
 
-  //   //                 if (user && userId) {
-  //   //                   setIsBookingOpen(true);
-  //   //                 } else {
-  //   //                   setChoiceClient(true);
-  //   //                 }
-  //   //               }}
-  //   //             className="mx-auto bg-[#f18f34] hover:bg-[#f9b131] text-black px-4 py-1 rounded-full transition-colors flex items-center justify-center"
-  //   //             style={{ fontFamily: 'Agency FB, sans-serif', display: 'block' }}
-  //   //           >
-  //   //             Réserver 
-  //   //           </button> */}
+    //         </div>
+    //         <div>
+    //           <div className="mb-8">
+    //             <div className="space-y-4">
+    //               {Array.isArray(service.details?.types) &&
+    //                service.details.types
+    //                 .filter(type => {
+    //                   if (!selectedService) return true;
+    //                   if (selectedService && !selectedMassageType) {
+    //                     return selectedService === service.title;
+    //                   }
+    //                   return selectedService === service.title && selectedMassageType === type.id;
+    //                 })
 
-  //   //         </div>
-  //   //         <div>
-  //   //           <div className="mb-8">
-  //   //             <div className="space-y-4">
-  //   //               {Array.isArray(service.details?.types) &&
-  //   //                service.details.types
-  //   //                 .filter(type => {
-  //   //                   if (!selectedService) return true;
-  //   //                   if (selectedService && !selectedMassageType) {
-  //   //                     return selectedService === service.title;
-  //   //                   }
-  //   //                   return selectedService === service.title && selectedMassageType === type.id;
-  //   //                 })
+    //                 // .filter(type => {
+    //                 //   if (selectedService && !selectedMassageType) return true;
+    //                 //   if (!selectedService || !selectedMassageType) return true;
 
-  //   //                 // .filter(type => {
-  //   //                 //   if (selectedService && !selectedMassageType) return true;
-  //   //                 //   if (!selectedService || !selectedMassageType) return true;
+    //                 //   return selectedService === service.title && selectedMassageType === type.id;
 
-  //   //                 //   return selectedService === service.title && selectedMassageType === type.id;
+    //                 // })
+    //                .map((type, index) => (
+    //                 <div key={index} className="bg-gray-50 p-4 rounded-lg ">
+    //                   <div className="mb-1 flex items-center gap-1">
+    //                     {type.price_promo && (
+    //                       <span className="inline-flex items-center gap-1 bg-red-500 text-white text-xs font-semibold px-2 py-1 rounded-full shadow-sm">
+    //                         <Sparkles className="w-2 h-2" />
+    //                         Promotion
+    //                       </span>
+    //                     )}
+    //                       <button
+    //                         onClick={() => {
+    //                           handleBookNowPrestation(service.title, type.id);
+    //                           const user = localStorage.getItem("user");
+    //                           const userId = localStorage.getItem("user_id");
 
-  //   //                 // })
-  //   //                .map((type, index) => (
-  //   //                 <div key={index} className="bg-gray-50 p-4 rounded-lg ">
-  //   //                   <div className="mb-1 flex items-center gap-1">
-  //   //                     {type.price_promo && (
-  //   //                       <span className="inline-flex items-center gap-1 bg-red-500 text-white text-xs font-semibold px-2 py-1 rounded-full shadow-sm">
-  //   //                         <Sparkles className="w-2 h-2" />
-  //   //                         Promotion
-  //   //                       </span>
-  //   //                     )}
-  //   //                       <button
-  //   //                         onClick={() => {
-  //   //                           handleBookNowPrestation(service.title, type.id);
-  //   //                           const user = localStorage.getItem("user");
-  //   //                           const userId = localStorage.getItem("user_id");
+    //                           if (user && userId) {
+    //                             setIsBookingOpen(true);
+    //                           } else {
+    //                             setChoiceClient(true);
+    //                           }
+    //                         }}
+    //                         className="bg-[#f18f34] hover:bg-[#f9b131] text-dark text-sm font-medium px-3 py-1 rounded-md shadow ml-auto"
+    //                             style={{ fontFamily: 'Agency FB, sans-serif' }}>
+    //                         Réserver
+    //                       </button>
+    //                   </div>
+    //                   <div className="flex justify-between items-center mb-2">
+    //                       <h3 className="text-lg font-semibold" translate="no">{type.title}</h3>
+    //                       <div className="flex items-center gap-3">
+    //                         {type.price_promo ? (
+    //                           <>
+    //                             <span className="inline-flex items-center gap-2">
+    //                               <span className="line-through text-gray-400">
+    //                                 {type.price}
+    //                                 {Number(type.validity_days) === 30 ? '' : ''}
+    //                               </span>
+    //                               <span className="text-[#f18f34] font-semibold">
+    //                                 {type.price_promo}
+    //                                 {Number(type.validity_days) === 30 ? '/mois' : ''}
+    //                               </span>
 
-  //   //                           if (user && userId) {
-  //   //                             setIsBookingOpen(true);
-  //   //                           } else {
-  //   //                             setChoiceClient(true);
-  //   //                           }
-  //   //                         }}
-  //   //                         className="bg-[#f18f34] hover:bg-[#f9b131] text-dark text-sm font-medium px-3 py-1 rounded-md shadow ml-auto"
-  //   //                             style={{ fontFamily: 'Agency FB, sans-serif' }}>
-  //   //                         Réserver
-  //   //                       </button>
-  //   //                   </div>
-  //   //                   <div className="flex justify-between items-center mb-2">
-  //   //                       <h3 className="text-lg font-semibold" translate="no">{type.title}</h3>
-  //   //                       <div className="flex items-center gap-3">
-  //   //                         {type.price_promo ? (
-  //   //                           <>
-  //   //                             <span className="inline-flex items-center gap-2">
-  //   //                               <span className="line-through text-gray-400">
-  //   //                                 {type.price}
-  //   //                                 {Number(type.validity_days) === 30 ? '' : ''}
-  //   //                               </span>
-  //   //                               <span className="text-[#f18f34] font-semibold">
-  //   //                                 {type.price_promo}
-  //   //                                 {Number(type.validity_days) === 30 ? '/mois' : ''}
-  //   //                               </span>
-
-  //   //                             </span>
-  //   //                           </>
-  //   //                         ) : (
-  //   //                           <span className="text-[#f18f34] font-semibold">
-  //   //                             {type.price}
-  //   //                             {Number(type.validity_days) === 30 ? '/mois' : ''}
-  //   //                           </span>
-  //   //                         )}
-  //   //                     </div>
-  //   //                   </div>
-  //   //                   <div className="flex items-center text-gray-500 text-sm justify-between">
-  //   //                     <div dangerouslySetInnerHTML={{ __html: type.description }} />
-  //   //                     {type.sessions.some(session => parseInt(session.session_per_period) > 0) && (
-  //   //                       <div className="ml-auto">
-  //   //                         <button
-  //   //                           onClick={() => handleShowTypeDetails(type)}
-  //   //                           title='Afficher détails'
-  //   //                           className="w-fit bg-white hover:bg-grey text-black px-4 py-1 rounded-full transition-colors flex items-center justify-center gap-1"
-  //   //                           // style={{ fontFamily: 'Agency FB, sans-serif' }}
-  //   //                         >
-  //   //                         <ChevronDown 
-  //   //                           className={`w-6 h-6 transition-transform duration-300 ${selectedType?.id === type.id ? 'rotate-180' : ''}`} 
-  //   //                         />
-  //   //                         </button>
-  //   //                       </div>
-  //   //                     )}
-  //   //                   </div>
-  //   //                   {selectedType?.title === type.title && (
-  //   //                     <div className="mt-4 p-4 bg-[#f9b131] from-orange-100 to-white border border-orange-300 rounded-xl">
-  //   //                       <div dangerouslySetInnerHTML={{ __html: type.detail }} />
-  //   //                     </div>
-  //   //                   )}
-  //   //                 </div>
-  //   //               ))}
-  //   //             </div>
-  //   //             <div style={{ fontFamily: 'Agency FB, sans-serif', display: 'block' }} >{service.remarque}</div>
-  //   //           </div>
-  //   //         </div>
-  //   //       </div>
-  //   //     </div>
-  //   //   </div>
-  //   // );
-  // }
+    //                             </span>
+    //                           </>
+    //                         ) : (
+    //                           <span className="text-[#f18f34] font-semibold">
+    //                             {type.price}
+    //                             {Number(type.validity_days) === 30 ? '/mois' : ''}
+    //                           </span>
+    //                         )}
+    //                     </div>
+    //                   </div>
+    //                   <div className="flex items-center text-gray-500 text-sm justify-between">
+    //                     <div dangerouslySetInnerHTML={{ __html: type.description }} />
+    //                     {type.sessions.some(session => parseInt(session.session_per_period) > 0) && (
+    //                       <div className="ml-auto">
+    //                         <button
+    //                           onClick={() => handleShowTypeDetails(type)}
+    //                           title='Afficher détails'
+    //                           className="w-fit bg-white hover:bg-grey text-black px-4 py-1 rounded-full transition-colors flex items-center justify-center gap-1"
+    //                           // style={{ fontFamily: 'Agency FB, sans-serif' }}
+    //                         >
+    //                         <ChevronDown 
+    //                           className={`w-6 h-6 transition-transform duration-300 ${selectedType?.id === type.id ? 'rotate-180' : ''}`} 
+    //                         />
+    //                         </button>
+    //                       </div>
+    //                     )}
+    //                   </div>
+    //                   {selectedType?.title === type.title && (
+    //                     <div className="mt-4 p-4 bg-[#f9b131] from-orange-100 to-white border border-orange-300 rounded-xl">
+    //                       <div dangerouslySetInnerHTML={{ __html: type.detail }} />
+    //                     </div>
+    //                   )}
+    //                 </div>
+    //               ))}
+    //             </div>
+    //             <div style={{ fontFamily: 'Agency FB, sans-serif', display: 'block' }} >{service.remarque}</div>
+    //           </div>
+    //         </div>
+    //       </div>
+    //     </div>
+    //   </div>
+    // );
+  }
 
   return (
     <div className="min-h-screen bg-white mb-5">
