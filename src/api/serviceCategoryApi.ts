@@ -255,7 +255,6 @@ export const servicesService = {
   login: async (payload: Login): Promise<BookingResponse> => {
   try {
       const response = await API.post<BookingResponse>('/client/login', payload);
-      // console.log("ettooo user ",response.data);
       return response.data;
     } catch (error: any) {
       if (error.response && error.response.data) {
