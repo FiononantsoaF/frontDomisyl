@@ -12,7 +12,6 @@ interface PaymentInfoProps {
 }
 
 export default function PaymentInfo({ isOpen, setIsOpen,choicePaiement, setChoicePaiement , price }:PaymentInfoProps) {
-  console.log("price dans paymentinfo", price);
   const navigate = useNavigate();
   const handleClose = () => {
     setIsOpen(false);     
