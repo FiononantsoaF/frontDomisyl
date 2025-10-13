@@ -16,7 +16,6 @@ export default function PaymentInfoReview({ isOpen, setIsOpen,setChoicePaiement 
   const handleClose = () => {
     setIsOpen(false);     
     setChoicePaiement(false);
-    console.log("etttooooo") ;
     navigate("/");         
   };
   const mvolaNumber = "038 28 127 35";

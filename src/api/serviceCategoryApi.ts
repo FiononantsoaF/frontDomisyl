@@ -233,14 +233,14 @@ export interface Appointmentsall {
 export const servicesService = {
   all: async (): Promise<ServicesWithEmployee> => {
     const response = await API.get<ServicesWithEmployee>('/service-category'); 
-    console.log("service",response.data);
+
     return response.data;
   },
 
   book: async (payload: BookingPayload): Promise<BookingResponsePayement> => {
     try {
       const response = await API.post<BookingResponsePayement>('/appointments', payload);
-      console.log(response);
+
       return response.data;
     } catch (error: any) {
 
@@ -267,7 +267,6 @@ export const servicesService = {
   verificationcreneau: async (payload: BookingVerification): Promise<ResponseVerification> => {
   try {
       const response = await API.post<ResponseVerification>('/checkcreneau', payload);
-      // console.log("verification ",response.data);
       return response.data;
       
     } catch (error: any) {
@@ -280,7 +279,6 @@ export const servicesService = {
 
   appointandsub: async (): Promise<AppointAndSub> => {
     const userId = localStorage.getItem('user_id');
-    console.log("user",userId);
     const [appointmentsRes, subscriptionsRes] = await Promise.all([
       API.get<AppointmentResponse>(`/appointments/client/${userId}`),
       API.get<SubscriptionResponse>(`/subscription/client/${userId}`)
@@ -293,7 +291,6 @@ export const servicesService = {
 
   allappointments : async (): Promise<Appointmentsall> => {
     const response = await API.get<Appointmentsall>('/appointmentsall'); 
-    console.log("all rdv",response.data);
     return response.data;
   },
 

@@ -2,6 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { useNavigate, Link } from 'react-router-dom';
 import API from '../api/axios'; 
 import { User, servicesService } from '../api/serviceCategoryApi';
+import { ChevronLeft } from 'lucide-react';
 import { FaUser, FaPhone, FaEnvelope, FaMapMarkerAlt } from 'react-icons/fa';
 
 const ProfileEdit: React.FC = () => {
@@ -89,14 +90,15 @@ const ProfileEdit: React.FC = () => {
   return (
     <>
       <div>
-            <Link 
+        <Link 
           to="/" 
-          className="text-[#f18f34] font-semibold hover:underline mb-4 block"
+          className="flex mt-2 items-center text-[#f18f34] font-semibold hover:underline mb-4"
         >
-          ← Retour
+          <ChevronLeft className="w-5 h-5 mr-2" />
+          Retour
         </Link>
       </div>
-      <div className="max-w-lg mx-auto mt-12 p-6 bg-white shadow-lg rounded-xl border border-gray-100">
+      <div className="max-w-lg mx-auto  p-6 bg-white shadow-lg rounded-xl border border-gray-100">
 
         {!editing ? (
           <div className="space-y-4">

@@ -24,7 +24,6 @@ import { useNavigate } from "react-router-dom";
 import { Elements } from '@stripe/react-stripe-js';
 import PaiementStripe from './components/PaiementStripe';
 import AppointmentsTable from './components/AppointmentsTable';
-import { Tag, Sparkles } from "lucide-react";
 import { Link } from 'react-router-dom';
 import { User as UserIcon } from 'lucide-react';
 import { UserContext } from './components/UserContext';
@@ -35,7 +34,7 @@ import PaymentInfo from './components/PaymentInfo';
 import PaymentInfoReview from './components/PaymentInfoReview';
 import Details from './components/ServiceDetail/Details';
 
-import { Document, Page, pdfjs } from "react-pdf";
+import { Document, Page, pdfjs } from "react-pdf"; 
 registerLocale("fr", fr);
 
 
@@ -176,7 +175,8 @@ function App() {
   //   }
   // }, [selectedProviderId, selectedDate]);
 
-  // -------- eto 
+  // ----------
+  
   useEffect(() => {
     if (selectedMassageType) {
       setSelectedProviderId(null);
@@ -198,9 +198,6 @@ function App() {
       setAvailableCreneaux([]);
     }
   }, [selectedProviderId, selectedDate]);
-
-
-  // ----fin eto 
 
   useEffect(() => {
     localStorage.setItem('showList', JSON.stringify(showList));
@@ -269,8 +266,6 @@ function App() {
   }, [paiement]);
 
   useEffect(() => {
-    console.log("selectedMassageType a changé :", selectedMassageType);
-    console.log("service a changé :", selectedService);
   }, [selectedMassageType, selectedService, preSelectedMassageType, preSelectedService]);
 
 
@@ -316,7 +311,6 @@ function App() {
     if (cgvRef.current) {
       const { scrollTop, scrollHeight, clientHeight } = cgvRef.current;
       if (scrollTop + clientHeight >= scrollHeight - 1) { 
-        // console.log("CGV scrolled to end");
         setCgvScrolledToEnd(true);
       }
     }
@@ -412,7 +406,6 @@ function App() {
         };
 
         const result = await servicesService.login(payload);
-        // console.log("Résultat du login:", result);
 
         if (!result.success || !result.data) {
           alert("Erreur : " + result.message);
@@ -448,9 +441,7 @@ function App() {
         } else if (loginSource === "account") {
           setShowList(true);
           setIsLoginOpen(false);
-          // console.log("Redirection vers account");
         }
-        // resetLoginForm();
       } catch (error: any) {
         console.error("Erreur lors de la connexion:", error);
         resetLoginForm();
@@ -530,8 +521,7 @@ function App() {
     if (name === "address") {
         const error = await servicesService.checkAdress(value);
           if (!error) {
-            setAddressError("L'adresse ne pas être uniquement des chiffres.");
-            
+            setAddressError("L'adresse ne pas être uniquement des chiffres.");           
           } else {
             setAddressError(null);
           }
@@ -631,7 +621,6 @@ function App() {
         from_subscription: !!selectedSubId && Number(selectedSubId) > 0
       };
 
-      // console.log("ettoo no  alefa",payload);
       const result = await servicesService.book(payload);
       if (result.success && result.data) {
           setPaiement(result.data);
@@ -667,7 +656,6 @@ function App() {
           }
       } else {
         alert(result.message);
-        // resetBookingForm();
       } 
     } catch (error: any) {
       alert(error.message);
@@ -820,7 +808,6 @@ function App() {
 
     if (exactMatch) {
       setSelectedMassageType(exactMatch.id);
-      console.log(`Service présélectionné (correspondance exacte): ${exactMatch.title}`);
 
     } else {
       const partialMatch: ServiceType | undefined = serviceTypes.find(
@@ -830,7 +817,6 @@ function App() {
       );
       if (partialMatch) {
         setSelectedMassageType(partialMatch.id);
-        console.log(`Service présélectionné (correspondance partielle): ${partialMatch.title}`);
       } else {
         console.warn('Aucune correspondance trouvée pour le service :', subscription.service);
       }
@@ -866,29 +852,28 @@ function App() {
                 </label>
               </div>
                 <div className="flex flex-col md:flex-row gap-4 justify-center mt-4"> 
-                  {/* {showPaymentModal && <PaymentInfo isOpen={showPaymentModal} setIsOpen={setShowPaymentModal} choicePaiement={showPaymentChoice} setChoicePaiement={setShowPaymentChoice} price={paiement?.price_promo ?? paiement?.price}/>} */}
+                  {showPaymentModal && <PaymentInfo isOpen={showPaymentModal} setIsOpen={setShowPaymentModal} choicePaiement={showPaymentChoice} setChoicePaiement={setShowPaymentChoice} price={paiement?.price_promo ?? paiement?.price}/>}
 
-                  <button
+                  {/* <button
                     onClick={() => setSelectedMethod('mvola')}
                     disabled={!acceptedCGV}
                     className="flex-1 bg-gradient-to-r from-[#f9b131] to-[#f18f34] hover:from-[#f18f34] hover:to-[#f9b131] text-dark px-4 py-3.5 rounded-lg transition-all flex items-center justify-center gap-2 disabled:opacity-50 disabled:cursor-not-allowed font-bold shadow-md hover:shadow-lg"
                   >
                     MVola
                   </button>
-                  {/* Bouton Stripe commenté */}
-                  {/* <button
+                  <button
                     onClick={() => setSelectedMethod('stripe')}
                     className="flex-1 bg-gradient-to-r from-[#f9b131] to-[#f18f34] hover:from-[#f18f34] hover:to-[#f9b131] text-dark px-4 py-3.5 rounded-lg transition-all flex items-center justify-center gap-2 disabled:opacity-50 disabled:cursor-not-allowed font-bold shadow-md hover:shadow-lg"
                   >
-                    Payer par Carte (Stripe)
-                  </button> */}
+                    Virement bancaire
+                  </button>
                   <button
                     onClick={() => setSelectedMethod('orange')}
                     disabled={!acceptedCGV}
                     className="flex-1 bg-gradient-to-r from-[#f9b131] to-[#f18f34] hover:from-[#f18f34] hover:to-[#f9b131] text-dark px-4 py-3.5 rounded-lg transition-all flex items-center justify-center gap-2 disabled:opacity-50 disabled:cursor-not-allowed font-bold shadow-md hover:shadow-lg"
                   >
                     Orange Money
-                  </button>
+                  </button> */}
                 </div>
             </div>
           </div>
@@ -927,9 +912,9 @@ function App() {
                       Numéro (034 ou 038 seulement)
                     </label>
                     <div className="relative">
-                      <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
+                      {/* <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
                         <span className="text-gray-500">+261</span>
-                      </div>
+                      </div> */}
                       <input
                         type="text"
                         name="client_phone"
@@ -988,8 +973,8 @@ function App() {
         >
           <div className="space-y-3">
             <div>
-              <label className="block text-sm font-medium text-gray-600 mb-1">
-                Phone ou Email
+              <label className="block text-sm font-medium text-dark-600 mb-1">
+                Téléphone ou Email
               </label>
               <input
                 type="text"
@@ -1001,7 +986,7 @@ function App() {
               />
             </div>
             <div>
-              <label className="block text-sm font-medium text-gray-600 mb-1">
+              <label className="block text-sm font-medium text-dark-600 mb-1">
                 Mot de passe 
               </label>
               <input
@@ -1415,19 +1400,21 @@ function App() {
   if (showList) {
     return (
       <div className="min-h-screen bg-white px-4 py-8">
-        <div className="bg-gray-50 px-4 py-2 text-sm text-gray-700 flex flex-wrap items-center justify-between gap-3">
+        <div className="max-w-7xl mx-auto mb-4">
           <button
             onClick={() => {
               setShowList(false);
               setIsLoginOpen(false);
               refreshPage();
             }}
-            className="text-[#f18f34] font-semibold hover:underline whitespace-nowrap"
+            className="flex items-center text-[#f18f34] font-semibold hover:underline whitespace-nowrap"
           >
-            ← Retour à l'accueil
+            <ChevronLeft className="w-4 h-4 mr-1" />
+            Retour
           </button>
-
-          <div className="flex items-center gap-3 flex-wrap justify-end">
+        </div>
+        <div className="bg-gray-50 px-4 py-2 text-sm text-gray-700 flex flex-wrap items-center justify-between gap-3">
+          <div className="flex justify-end w-full pr-4">
             <button
               onClick={() => setContact(true)}
               className="bg-[#f18f34] text-dark font-semibold rounded-full text-sm sm:text-base cursor-pointer focus:outline-none px-4 h-10 flex items-center"
@@ -1522,14 +1509,23 @@ function App() {
               />
             )}
           </div>
-        <div className="flex items-center gap-3">
-          {/* Bouton infos utilisateur */}
-
+        {/* <div className="flex items-center gap-3">
           <button
             className="bg-white text-black px-4 py-1 rounded-full transition-colors whitespace-nowrap"
             style={{ fontFamily: 'Agency FB, sans-serif' }}
           >
             {userDetail?.name} ({userDetail?.phone} - {userDetail?.email})
+          </button>
+        </div> */}
+        <div className="flex items-center gap-3">
+          <button
+            className="bg-white text-black px-4 py-2 rounded-full transition-colors"
+            style={{ fontFamily: 'Agency FB, sans-serif' }}
+          >
+            <div className="flex flex-col text-left">
+              <span>{userDetail?.name}</span>
+              <span>({userDetail?.email})</span>
+            </div>
           </button>
         </div>
         </nav>
@@ -1622,7 +1618,7 @@ function App() {
     );
 }
 
-  if (showServices && selectedShowService) {
+  if (showServices && selectedShowService) { 
     const service = services.find(
       s => s.title.toLowerCase().trim() === selectedShowService.toLowerCase().trim()
     );
@@ -1882,21 +1878,23 @@ function App() {
         </div>
       </header>
       {/* Services Section */}
-      <section id="services" className="py-20 px-6">
+      <section id="services" className="py-16 px-6">
         <div className="max-w-7xl mx-auto">
           <h2 
-            className="text-4xl text-center mb-16 text-[#1d1d1b]"
+            className="text-4xl text-center mb-8 text-[#1d1d1b]"
             style={{ fontFamily: 'Agency FB, sans-serif' }}
           >
             Nos Services
           </h2>
-          <div className="grid md:grid-cols-4 gap-8">
+          {/* grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-8 */}
+          {/* grid md:grid-cols-4 gap-8 */}
+          <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-8">
             {services.map((service, index) => (
               <div 
                 key={index} 
                 className="bg-white rounded-xl shadow-lg hover:shadow-xl transition-shadow"
               >
-              <div className="p-6">
+              <div className="p-6 flex-1 flex flex-col">
                   <div className="flex items-center gap-3 mb-4">
                     <h3 
                       className="text-2xl text-[#1d1d1b]"
@@ -1905,7 +1903,7 @@ function App() {
                       {service.title}
                     </h3>
                   </div>
-                  <p className="text-gray-600">
+                  <p className="text-gray-600 flex-grow">
                     { service.description}
                   </p>
                 </div>
@@ -1920,7 +1918,19 @@ function App() {
                     className="w-full h-full object-cover hover:scale-110 transition-transform duration-300"
                   />
                 </div>
-                <button 
+                <div className="p-6 pt-3">
+                  <button 
+                    onClick={() => {
+                      setSelectedShowService(service.title);
+                      setShowServices(true);            
+                    }}
+                    className="w-full bg-[#f9b131] hover:bg-[#f18f34] text-[#1d1d1b] py-2 rounded-full transition-colors"
+                    style={{ fontFamily: 'Agency FB, sans-serif' }}
+                  >
+                    En savoir plus
+                  </button>
+                </div>
+                {/* <button 
                   onClick={() => {
                     setSelectedShowService(service.title);
                     setShowServices(true);            
@@ -1929,7 +1939,7 @@ function App() {
                   style={{ fontFamily: 'Agency FB, sans-serif' }}
                 >
                   En savoir plus
-                </button>
+                </button> */}
               </div>
             ))}
           </div>
@@ -2023,7 +2033,7 @@ function App() {
       )}
 
       {/* connexion  */}
-      <Dialog open={isLoginOpen} onClose={() => {}} className="relative z-50">
+      <Dialog open={isLoginOpen} onClose={() => {}} className="relative z-50" >
         <div className="fixed inset-0 bg-black/30" aria-hidden="true" />
         <div className="fixed inset-0 flex items-center justify-center p-4">
           <Dialog.Panel className="max-w-md w-full bg-white rounded-2xl p-6 shadow-xl">

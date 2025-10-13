@@ -1,5 +1,6 @@
 import { ChevronLeft, ChevronDown, Sparkles } from "lucide-react";
 import { ServiceType, Services } from "../../api/serviceCategoryApi";
+import { useEffect } from "react";
 
 type ServiceDetailsProps = {
   showServices: boolean;
@@ -36,6 +37,12 @@ export default function Details({
         selectedShowService.toLowerCase().trim()
     );
 
+    useEffect(() => {
+      if (showServices && selectedShowService) {
+        window.scrollTo({ top: 0, behavior: "smooth" });
+      }
+    }, [showServices, selectedShowService]);
+
     if (!service) {
       return <div>Service introuvable.</div>;
     }
@@ -51,9 +58,8 @@ export default function Details({
             <ChevronLeft className="w-5 h-5 mr-2" />
             Retour
           </button>
-
+          {/* "grid grid-cols-1 md:grid-cols-2 gap-8 sm:gap-10 lg:gap-12 items-center */}
           <div className="grid md:grid-cols-2 gap-12">
-            {/* Colonne image */}
             <div>
               <h1
                 className="mx-auto text-4xl mb-5 text-[#1d1d1b] text-center"

@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { Lock } from 'lucide-react';
+import { Lock, ChevronLeft } from 'lucide-react';
 import API from '../api/axios';
 import { Link, useParams, useNavigate } from 'react-router-dom';
 import { Client } from '../api/serviceCategoryApi';
@@ -22,6 +22,7 @@ const ChangePassword: React.FC = () => {
     newPassword: '',
     confirmPassword: '',
   });
+  const [isSubmitting, setIsSubmitting] = useState(false);
 
   const handleClientDataChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const { name, value } = e.target;
@@ -38,88 +39,84 @@ const ChangePassword: React.FC = () => {
       return;
     }
 
+    setIsSubmitting(true);
     try {
-      const payload = {
-        token: token,
-        newPassword: clientData.newPassword
-      };
-      console.log(payload);
-      const res = await API.post<Reset>(`/change-password`, payload);
-      console.log('Mot de passe changé avec succès', res.data);
-      alert(res.data.message || 'Mot de passe changé avec succès.');
-      navigate('/'); 
+      const payload = { token, newPassword: clientData.newPassword };
+      const res = await API.post<Reset>('/change-password', payload);
 
+      alert(res.data.message || 'Mot de passe changé avec succès.');
+      navigate('/');
     } catch (error: any) {
-      console.error('Password change failed:', error);
-      alert('Erreur lors du changement de mot de passe : ' + 
-        (error?.response?.data?.message || error.message || 'Erreur inconnue'));
+      alert(
+        'Erreur lors du changement de mot de passe : ' +
+          (error?.response?.data?.message || error.message || 'Erreur inconnue')
+      );
       navigate('/password_reset');
+    } finally {
+      setIsSubmitting(false);
     }
   };
 
   return (
     <>
       <div>
-        <Link 
-          to="/login" 
-          className="text-[#f18f34] font-semibold hover:underline"
+        <Link
+          to="/login"
+          className="flex items-center text-[#f18f34] font-semibold hover:underline mb-4"
         >
-          ← Retour à l'accueil
+          <ChevronLeft className="w-5 h-5 mr-2" />
+          Retour
         </Link>
       </div>
-      <div className="flex items-center justify-center h-screen bg-gray-100">
-        <div className="w-full max-w-md bg-white p-6 rounded-2xl shadow-lg">
-          <h2 className="text-xl font-semibold text-center mb-6 text-gray-700">
-            🔐 Changer le mot de passe
-          </h2>
+      <div className="max-w-lg mx-auto mt-12 p-6 bg-white shadow-lg rounded-xl border border-gray-100">
+        <h2 className="text-2xl font-bold text-gray-800 mb-4 flex items-center gap-2">
+          <Lock className="text-[#f18f34]" />
+          Changer le mot de passe
+        </h2>
 
-          <form 
-            onSubmit={handleChangePassword} 
-            className="grid grid-cols-1 gap-6"
+        <form onSubmit={handleChangePassword} className="space-y-4">
+          <div>
+            <label className="block text-sm font-medium text-gray-700 mb-1">
+              Nouveau mot de passe
+            </label>
+            <input
+              type="password"
+              name="newPassword"
+              value={clientData.newPassword}
+              onChange={handleClientDataChange}
+              placeholder="Nouveau mot de passe"
+              className="w-full border border-gray-300 rounded-md px-3 py-2 focus:outline-none focus:ring-2 focus:ring-[#f18f34] shadow-sm"
+              required
+            />
+          </div>
+
+          <div>
+            <label className="block text-sm font-medium text-gray-700 mb-1">
+              Confirmer le mot de passe
+            </label>
+            <input
+              type="password"
+              name="confirmPassword"
+              value={clientData.confirmPassword}
+              onChange={handleClientDataChange}
+              placeholder="Confirmer le mot de passe"
+              className="w-full border border-gray-300 rounded-md px-3 py-2 focus:outline-none focus:ring-2 focus:ring-[#f18f34] shadow-sm"
+              required
+            />
+          </div>
+
+          <button
+            type="submit"
+            disabled={isSubmitting}
+            className={`w-full text-white font-semibold py-3 rounded-full transition-all shadow-md ${
+              isSubmitting
+                ? 'bg-gray-400 cursor-not-allowed'
+                : 'bg-gradient-to-r from-[#f9b131] to-[#f18f34] hover:from-[#f18f34] hover:to-[#f9b131]'
+            }`}
           >
-            {/* Nouveau mot de passe */}
-            <div>
-              <label className="block text-sm font-medium text-gray-600 mb-1">
-                Nouveau mot de passe
-              </label>
-              <input
-                type="password"
-                name="newPassword"
-                value={clientData.newPassword}
-                onChange={handleClientDataChange}
-                className="w-full rounded-md border border-gray-300 px-3 py-2 focus:outline-none focus:ring-2 focus:ring-[#f18f34]"
-                required
-              />
-            </div>
-
-            {/* Confirmation mot de passe */}
-            <div>
-              <label className="block text-sm font-medium text-gray-600 mb-1">
-                Confirmer le mot de passe
-              </label>
-              <input
-                type="password"
-                name="confirmPassword"
-                value={clientData.confirmPassword}
-                onChange={handleClientDataChange}
-                className="w-full rounded-md border border-gray-300 px-3 py-2 focus:outline-none focus:ring-2 focus:ring-[#f18f34]"
-                required
-              />
-            </div>
-
-            {/* Bouton */}
-            <div>
-              <button
-                type="submit"
-                className="w-full bg-[#f9b131] hover:bg-[#f18f34] text-white px-4 py-3 rounded-full transition-colors flex items-center justify-center gap-2 disabled:opacity-50 disabled:cursor-not-allowed"
-                style={{ fontFamily: 'Agency FB, sans-serif' }}
-              >
-                <Lock className="w-5 h-5" />
-                Changer le mot de passe
-              </button>
-            </div>
-          </form>
-        </div>
+            {isSubmitting ? 'Envoi en cours...' : 'Changer le mot de passe'}
+          </button>
+        </form>
       </div>
     </>
   );
