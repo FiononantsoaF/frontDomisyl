@@ -1,4 +1,4 @@
-import React, { useState, useContext, useEffect, useRef  } from 'react';
+import React, { useState, useContext, useEffect, useRef,useLayoutEffect  } from 'react';
 import DatePicker from "react-datepicker";
 import "react-datepicker/dist/react-datepicker.css";
 import { registerLocale } from "react-datepicker";
@@ -25,16 +25,21 @@ import { Elements } from '@stripe/react-stripe-js';
 import PaiementStripe from './components/PaiementStripe';
 import AppointmentsTable from './components/AppointmentsTable';
 import { Link } from 'react-router-dom';
-import { User as UserIcon } from 'lucide-react';
 import { UserContext } from './components/UserContext';
-import PromoBanner from './components/Promo';
 import OrangeMoney from './components/OrangeMoney';
 import ChoiceClientModal from './components/ChoiceClientModal';
 import PaymentInfo from './components/PaymentInfo';
 import PaymentInfoReview from './components/PaymentInfoReview';
 import Details from './components/ServiceDetail/Details';
+import { useBlockBackNavigation}   from './hooks/useBlockBackNavigation';
+
+import { MapContainer, TileLayer, Marker, Popup } from 'react-leaflet';
+import 'leaflet/dist/leaflet.css';
+import * as L from "leaflet"; 
+
 
 import { Document, Page, pdfjs } from "react-pdf"; 
+
 registerLocale("fr", fr);
 
 
@@ -46,6 +51,9 @@ const stripePromise = loadStripe('pk_test_51RmAH4PMG09tDqBqfeJKApH3F1NgBd6W7QWY0
 
 
 function App() {
+
+  useBlockBackNavigation(true);
+
   const [isBookingOpen, setIsBookingOpen] = useState(false);
   const [selectedService, setSelectedService] = useState('');
   const [isContactOpen, setIsContactOpen] = useState(false);
@@ -176,7 +184,16 @@ function App() {
   // }, [selectedProviderId, selectedDate]);
 
   // ----------
-  
+
+  useEffect(() => {
+    const handlePopState = () => {
+      history.pushState(null, "", window.location.href);
+    };
+    history.pushState(null, "", window.location.href);
+    window.addEventListener("popstate", handlePopState);
+    return () => window.removeEventListener("popstate", handlePopState);
+  }, []);
+
   useEffect(() => {
     if (selectedMassageType) {
       setSelectedProviderId(null);
@@ -393,12 +410,10 @@ function App() {
    
   const handleLogin = async (e: React.FormEvent) => {
       e.preventDefault();
-      
       if (!clientData || !clientData.login || !clientData.password) {
         alert("Veuillez remplir les informations");
         return;
       }
-
       try {
         const payload: Login = {
           login: clientData.login,
@@ -1317,7 +1332,7 @@ function App() {
         </>
         )}
 
-        <div>
+        {/* <div>
           <label className="block text-sm font-medium text-gray-700 mb-1">
             Adresse *
           </label>
@@ -1333,7 +1348,24 @@ function App() {
           {addressError && (
             <p className="text-red-500 text-sm mt-1">{addressError}</p>
           )}
+        </div> */}
+
+        <div className="w-full h-[400px] rounded-lg overflow-hidden">
+          <MapContainer
+            center={[-18.8792, 47.5079]} // centre initial sur Antananarivo
+            zoom={13}
+            className="h-full w-full"
+          >
+            <TileLayer
+              url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png"
+              attribution='&copy; <a href="https://www.openstreetmap.org/">OpenStreetMap</a> contributors'
+            />
+            <Marker position={[-18.9563694, 47.5219733]}>
+              <Popup>Antananarivo, Madagascar 🇲🇬</Popup>
+            </Marker>
+          </MapContainer>
         </div>
+
       </div>
 
 
@@ -1399,7 +1431,7 @@ function App() {
   
   if (showList) {
     return (
-      <div className="min-h-screen bg-white px-4 py-8">
+      <div className="min-h-screen bg-white px-4 pt-4">
         <div className="max-w-7xl mx-auto mb-4">
           <button
             onClick={() => {
@@ -1409,11 +1441,11 @@ function App() {
             }}
             className="flex items-center text-[#f18f34] font-semibold hover:underline whitespace-nowrap"
           >
-            <ChevronLeft className="w-4 h-4 mr-1" />
+            <ChevronLeft className="w-4 h-4 mr-2" />
             Retour
           </button>
         </div>
-        <div className="bg-gray-50 px-4 py-2 text-sm text-gray-700 flex flex-wrap items-center justify-between gap-3">
+        <div className="bg-gray-50 px-4 py-1 text-sm text-gray-700 flex flex-wrap items-center justify-between gap-3">
           <div className="flex justify-end w-full pr-4">
             <button
               onClick={() => setContact(true)}
@@ -1509,14 +1541,6 @@ function App() {
               />
             )}
           </div>
-        {/* <div className="flex items-center gap-3">
-          <button
-            className="bg-white text-black px-4 py-1 rounded-full transition-colors whitespace-nowrap"
-            style={{ fontFamily: 'Agency FB, sans-serif' }}
-          >
-            {userDetail?.name} ({userDetail?.phone} - {userDetail?.email})
-          </button>
-        </div> */}
         <div className="flex items-center gap-3">
           <button
             className="bg-white text-black px-4 py-2 rounded-full transition-colors"
@@ -1525,6 +1549,9 @@ function App() {
             <div className="flex flex-col text-left">
               <span>{userDetail?.name}</span>
               <span>({userDetail?.email})</span>
+              {/* <a href="https://exemple.com" className="cursor-pointer text-[#f18f34] ml-2">
+                  Mon plan alimentaire
+              </a> */}
             </div>
           </button>
         </div>
@@ -1801,7 +1828,7 @@ function App() {
                 <div className="whitespace-nowrap animate-marquee text-white font-bold text-xl sm:text-base md:text-lg  relative z-10 tracking-wider" style={{ fontFamily: 'Agency FB, sans-serif',
                    WebkitTextStroke: '0.5px white'
                 }}>
-                    OFFRE SPÉCIALE LANCEMENT -25% sur toutes les prestations du 20/09 au 30/10/2025
+                    OFFRE SPÉCIALE LANCEMENT -25% sur toutes les prestations du 20/09 au 31/10/2025
                 </div>
             </div>
         </div>
