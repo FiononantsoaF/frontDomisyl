@@ -867,38 +867,34 @@ function App() {
                 </label>
               </div>
                 <div className="flex flex-col md:flex-row gap-4 justify-center mt-4"> 
-                  {showPaymentModal && <PaymentInfo isOpen={showPaymentModal} setIsOpen={setShowPaymentModal} choicePaiement={showPaymentChoice} setChoicePaiement={setShowPaymentChoice} price={paiement?.price_promo ?? paiement?.price}/>}
-
-                  {/* <button
+                  {/* {showPaymentModal && <PaymentInfo isOpen={showPaymentModal} setIsOpen={setShowPaymentModal} choicePaiement={showPaymentChoice} setChoicePaiement={setShowPaymentChoice} price={paiement?.price_promo ?? paiement?.price}/>} */}
+                  <button
                     onClick={() => setSelectedMethod('mvola')}
                     disabled={!acceptedCGV}
                     className="flex-1 bg-gradient-to-r from-[#f9b131] to-[#f18f34] hover:from-[#f18f34] hover:to-[#f9b131] text-dark px-4 py-3.5 rounded-lg transition-all flex items-center justify-center gap-2 disabled:opacity-50 disabled:cursor-not-allowed font-bold shadow-md hover:shadow-lg"
                   >
                     MVola
                   </button>
-                  <button
+                  {/* <button
                     onClick={() => setSelectedMethod('stripe')}
                     className="flex-1 bg-gradient-to-r from-[#f9b131] to-[#f18f34] hover:from-[#f18f34] hover:to-[#f9b131] text-dark px-4 py-3.5 rounded-lg transition-all flex items-center justify-center gap-2 disabled:opacity-50 disabled:cursor-not-allowed font-bold shadow-md hover:shadow-lg"
                   >
                     Virement bancaire
-                  </button>
+                  </button> */}
                   <button
                     onClick={() => setSelectedMethod('orange')}
                     disabled={!acceptedCGV}
                     className="flex-1 bg-gradient-to-r from-[#f9b131] to-[#f18f34] hover:from-[#f18f34] hover:to-[#f9b131] text-dark px-4 py-3.5 rounded-lg transition-all flex items-center justify-center gap-2 disabled:opacity-50 disabled:cursor-not-allowed font-bold shadow-md hover:shadow-lg"
                   >
                     Orange Money
-                  </button> */}
+                  </button> 
                 </div>
             </div>
           </div>
         )}
-
-
         {/* vue paiement orange */}
-
         {selectedMethod === "orange" && (
-          <OrangeMoney amount={paiement?.price ?? 0 } />
+          <OrangeMoney amount={paiement?.price_promo ?? paiement?.price ?? 0} />
         )}
 
         {/* Vue paiement MVola */}
@@ -1332,7 +1328,7 @@ function App() {
         </>
         )}
 
-        {/* <div>
+       <div>
           <label className="block text-sm font-medium text-gray-700 mb-1">
             Adresse *
           </label>
@@ -1348,9 +1344,9 @@ function App() {
           {addressError && (
             <p className="text-red-500 text-sm mt-1">{addressError}</p>
           )}
-        </div> */}
+        </div>
 
-        <div className="w-full h-[400px] rounded-lg overflow-hidden">
+        {/* <div className="w-full h-[400px] rounded-lg overflow-hidden">
           <MapContainer
             center={[-18.8792, 47.5079]} // centre initial sur Antananarivo
             zoom={13}
@@ -1364,7 +1360,7 @@ function App() {
               <Popup>Antananarivo, Madagascar 🇲🇬</Popup>
             </Marker>
           </MapContainer>
-        </div>
+        </div> */}
 
       </div>
 
@@ -1386,14 +1382,13 @@ function App() {
         <label className="block text-sm font-medium text-gray-700 mb-1">
           REGLEMENT CLIENTS-DOMISYL
         </label>
-
-      <div
-        ref={rgcRef}
-        onScroll={handleRgcScroll}
-        className="border h-64 overflow-y-auto p-2"
-        dangerouslySetInnerHTML={{ __html: rgcHtml }}
-      />
-    </div>
+        <div
+          ref={rgcRef}
+          onScroll={handleRgcScroll}
+          className="border h-64 overflow-y-auto p-2"
+          dangerouslySetInnerHTML={{ __html: rgcHtml }}
+        />
+      </div>
 
       <div className="md:col-span-2">
         <button

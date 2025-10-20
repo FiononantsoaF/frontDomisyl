@@ -298,7 +298,7 @@ export const servicesService = {
   try {
       const response = await API.post<ValidateResponsePaiement>('/mvola', payload);
       return response.data;
-
+      
     } catch (error: any) {
       if (error.response && error.response.data) {
         return error.response.data;
