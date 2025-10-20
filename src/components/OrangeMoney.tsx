@@ -2,7 +2,7 @@ import React, { useState } from "react";
 import API from "../api/axios";
 
 interface OrangeMoneyPaymentProps {
-  amount: number; // montant reçu du parent
+  amount: number; 
 }
 
 const OrangeMoney: React.FC<OrangeMoneyPaymentProps> = ({ amount }) => {
@@ -19,9 +19,7 @@ const OrangeMoney: React.FC<OrangeMoneyPaymentProps> = ({ amount }) => {
     setError(null);
 
     try {
-      // On envoie un objet JSON avec la clé amount
       const response = await API.post("/orangemoney/pocess-payement", { amount });
-
       if (response.data.payment_url) {
         window.location.href = response.data.payment_url;
       } else {
