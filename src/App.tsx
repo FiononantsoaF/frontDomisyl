@@ -15,7 +15,6 @@ import { Employee } from './api/serviceCategoryApi';
 import { BookingPayload } from './api/serviceCategoryApi';
 import { SubscriptionList } from './api/serviceCategoryApi';
 import { AppointmentList} from './api/serviceCategoryApi';
-import { EmployeeCreneau } from './api/serviceCategoryApi';
 import { Subscription } from './api/serviceCategoryApi';
 import { PaiementData } from './api/serviceCategoryApi';
 import { User} from './api/serviceCategoryApi';
@@ -32,6 +31,9 @@ import PaymentInfo from './components/PaymentInfo';
 import PaymentInfoReview from './components/PaymentInfoReview';
 import Details from './components/ServiceDetail/Details';
 import { useBlockBackNavigation}   from './hooks/useBlockBackNavigation';
+import { usePayment } from './hooks/usePayment';
+import TestimonialsSection  from './components/testimonial/TestimonialsSection';
+
 
 import { MapContainer, TileLayer, Marker, Popup } from 'react-leaflet';
 import 'leaflet/dist/leaflet.css';
@@ -175,6 +177,17 @@ function App() {
   const [showPaymentChoice, setShowPaymentChoice] = useState(false);
   const [selectedMethod, setSelectedMethod] = useState<'mvola' | 'stripe' | 'orange'| null>(null);
   const [phoneError, setPhoneError] = useState<string | null>(null);
+
+  const {
+    isLoading,
+    paymentStatus,
+    error,
+    reference,
+    initiatePayment,
+    checkPaymentStatus,
+    waitForPaymentConfirmation,
+    reset,
+  } = usePayment();
 
   // useEffect(() => {
   //   if (selectedProviderId && selectedDate) {
@@ -561,23 +574,47 @@ function App() {
     }
     setLoadingpay(true);
     try{
+      // const payload: Paiement = {
+      //   amount : Number(paiementData.amount),
+      //   price: Number(paiementData.price),
+      //   client_phone: paiementData.client_phone,
+      //   appointment_id: Number(paiementData.appointment_id),
+      //   subscription_id : Number(paiementData.subscription_id),
+      // };
       const payload: Paiement = {
-        amount : Number(paiementData.amount),
+        amount: Number(paiementData.amount),
         price: Number(paiementData.price),
         client_phone: paiementData.client_phone,
         appointment_id: Number(paiementData.appointment_id),
-        subscription_id : Number(paiementData.subscription_id),
+        subscription_id: Number(paiementData.subscription_id),
       };
-      const result = await servicesService.pay(payload);
-      if (result.success ) {
-        alert(result.message);
-        resetPaiementForm();
-        setIsPaiementOpen(false);
-        refreshPage();
-      } else{
-        alert("erreur " + result.message);
-        setLoadingpay(false);
+      const response = await initiatePayment(payload);
+      if (response.success && response.data) {
+        const finalStatus = await waitForPaymentConfirmation(response.data.reference);
+        if (finalStatus?.status === 'completed') {
+          alert('Paiement réussi ! Votre réservation est confirmée.');
+          resetPaiementForm();
+          setIsPaiementOpen(false);
+          refreshPage();
+
+        } else {
+          alert("Le paiement a échoué ou a été annulé.");
+          setLoadingpay(false);
+          
+        }
+      } else {
+        alert(" Erreur lors du paiement : " + (response.message || "Inconnue"));
       }
+
+      // if (result.success ) {
+      //   alert(result.message);
+      //   resetPaiementForm();
+      //   setIsPaiementOpen(false);
+      //   refreshPage();
+      // } else{
+      //   alert("erreur " + result.message);
+      //   setLoadingpay(false);
+      // }
 
     } catch {
       setLoadingpay(true);
@@ -867,27 +904,27 @@ function App() {
                 </label>
               </div>
                 <div className="flex flex-col md:flex-row gap-4 justify-center mt-4"> 
-                  {/* {showPaymentModal && <PaymentInfo isOpen={showPaymentModal} setIsOpen={setShowPaymentModal} choicePaiement={showPaymentChoice} setChoicePaiement={setShowPaymentChoice} price={paiement?.price_promo ?? paiement?.price}/>} */}
-                  <button
+                  {showPaymentModal && <PaymentInfo isOpen={showPaymentModal} setIsOpen={setShowPaymentModal} choicePaiement={showPaymentChoice} setChoicePaiement={setShowPaymentChoice} price={paiement?.price_promo ?? paiement?.price}/>} 
+                  {/* <button
                     onClick={() => setSelectedMethod('mvola')}
                     disabled={!acceptedCGV}
                     className="flex-1 bg-gradient-to-r from-[#f9b131] to-[#f18f34] hover:from-[#f18f34] hover:to-[#f9b131] text-dark px-4 py-3.5 rounded-lg transition-all flex items-center justify-center gap-2 disabled:opacity-50 disabled:cursor-not-allowed font-bold shadow-md hover:shadow-lg"
                   >
                     MVola
-                  </button>
+                  </button> */}
                   {/* <button
                     onClick={() => setSelectedMethod('stripe')}
                     className="flex-1 bg-gradient-to-r from-[#f9b131] to-[#f18f34] hover:from-[#f18f34] hover:to-[#f9b131] text-dark px-4 py-3.5 rounded-lg transition-all flex items-center justify-center gap-2 disabled:opacity-50 disabled:cursor-not-allowed font-bold shadow-md hover:shadow-lg"
                   >
                     Virement bancaire
                   </button> */}
-                  <button
+                  {/* <button
                     onClick={() => setSelectedMethod('orange')}
                     disabled={!acceptedCGV}
                     className="flex-1 bg-gradient-to-r from-[#f9b131] to-[#f18f34] hover:from-[#f18f34] hover:to-[#f9b131] text-dark px-4 py-3.5 rounded-lg transition-all flex items-center justify-center gap-2 disabled:opacity-50 disabled:cursor-not-allowed font-bold shadow-md hover:shadow-lg"
                   >
                     Orange Money
-                  </button> 
+                  </button>  */}
                 </div>
             </div>
           </div>
@@ -1449,7 +1486,6 @@ function App() {
             >
               Coordonnées de paiement
             </button>
-
             <select
               defaultValue=""
               onChange={(e) => {
@@ -1823,7 +1859,7 @@ function App() {
                 <div className="whitespace-nowrap animate-marquee text-white font-bold text-xl sm:text-base md:text-lg  relative z-10 tracking-wider" style={{ fontFamily: 'Agency FB, sans-serif',
                    WebkitTextStroke: '0.5px white'
                 }}>
-                    OFFRE SPÉCIALE LANCEMENT -25% sur toutes les prestations du 20/09 au 31/10/2025
+                    Prenez rendez-vous dès aujourd’hui avec Domisyl et profitez d’un service à domicile sur mesure !
                 </div>
             </div>
         </div>
@@ -1831,7 +1867,23 @@ function App() {
         {/* <PromoBanner></PromoBanner> */}
 
           {/* Nav : bouton Mon Compte à droite */}
-          <nav className="relative z-20 flex justify-end px-4 sm:px-6 md:px-8 py-2 max-w-7xl mx-auto">
+          <nav className="relative z-20 flex justify-end gap-4 px-4 sm:px-6 md:px-8 py-2 max-w-7xl mx-auto">
+            {/* <select
+              onChange={(e) => {
+                const url = e.target.value;
+                if (url) window.location.href = url;
+              }}
+              className="bg-transparent border-2 border-[#f18f34] text-[#f18f34] hover:bg-[#f18f34] hover:text-white font-semibold px-4 sm:px-6 py-2 rounded-full transition-all duration-300 text-sm sm:text-base md:text-lg"
+              style={{ fontFamily: 'Agency FB, sans-serif' }}
+            >
+              <option value="">Menu</option>
+              <option value="/carte-cadeau">Carte Cadeau</option>
+              <option value="/offres-du-mois">Offres du mois</option>
+              <option value="/mes-cartes">Mes cartes cadeaux</option>
+              <option value="/historique-cartes">Historique des achats</option>
+              <option value="/promotions">Promotions</option>
+              <option value="/nouveautes">Nouveautés</option>
+            </select> */}
             <button 
               onClick={() => {
                 setLoginSource("account"); 
@@ -1842,6 +1894,7 @@ function App() {
             >
               Mon Compte
             </button>
+
           </nav>
 
         {/* Contenu central */}
@@ -1929,7 +1982,7 @@ function App() {
                     { service.description}
                   </p>
                 </div>
-                <div className="h-48 ">
+                <div className="h-48 "> 
                   <img 
                     src={service.image} 
                     alt={service.title}
@@ -1967,6 +2020,32 @@ function App() {
           </div>
         </div>
       </section>
+
+      {/*Temoignage client */}
+      {/* <TestimonialsSection /> */}
+      {/* <section id="temoingnage" className="py-20 px-4">
+            <div className="max-w-5xl mx-auto">
+                <h2 
+                  className="text-4xl text-center mb-8 text-[#1d1d1b]"
+                  style={{ fontFamily: 'Agency FB, sans-serif' }}
+                >
+                  Temoignage client
+                </h2>
+            </div>
+            <div className="flex flex-col md:flex-row items-center justify-center gap-6">
+                <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-8">
+                  <div className="p-6 flex-1 flex flex-col">
+                      <div className="h-48 ">
+                          <img 
+                            src="/image_1.jpg" 
+                            alt="Service" 
+                            className="w-full h-full object-cover hover:scale-110 transition-transform duration-300"
+                          />
+                      </div>
+                  </div>
+                </div>
+            </div>
+      </section> */}
 
       {/* Contact Section */}
       <section className="py-16 px-6 bg-gray-50">
