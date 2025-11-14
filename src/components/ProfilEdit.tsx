@@ -98,7 +98,7 @@ const ProfileEdit: React.FC = () => {
           Retour
         </Link>
       </div>
-      <div className="max-w-lg mx-auto  p-6 bg-white shadow-lg rounded-xl border border-gray-100">
+      <div className="max-w-lg mx-auto  p-6 bg-white shadow-lg rounded-xl border border-gray-100" style={{ fontFamily: "Agency FB, sans-serif" }}>
 
         {!editing ? (
           <div className="space-y-4">

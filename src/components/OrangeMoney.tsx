@@ -34,25 +34,26 @@ const OrangeMoney: React.FC<OrangeMoneyPaymentProps> = ({ amount }) => {
   };
 
   return (
-    <div className="p-6 bg-white rounded-xl shadow-md w-96 mx-auto">
-      <h2 className="text-xl font-bold text-blue-600 mb-4">
-        Paiement Orange Money
-      </h2>
+  <div className="p-6 bg-white rounded-xl shadow-md w-full max-w-md mx-auto">
+    <h2 className="text-xl font-bold text-blue-600 mb-4">
+      Paiement Orange Money
+    </h2>
 
-      <p className="mb-3">Montant à payer : {amount} Ar</p>
+    <p className="mb-3">Montant à payer : {amount} Ar</p>
 
-      <button
-        onClick={handlePay}
-        disabled={loading}
-        className={`w-full py-2 rounded-lg font-semibold text-white ${
-          loading ? "bg-gray-400" : "bg-orange-500 hover:bg-orange-600"
-        }`}
-      >
-        {loading ? "Redirection..." : "Payer avec Orange Money"}
-      </button>
+    <button
+      onClick={handlePay}
+      disabled={loading}
+      className={`w-full py-2 rounded-lg font-semibold text-white ${
+        loading ? "bg-gray-400" : "bg-orange-500 hover:bg-orange-600"
+      }`}
+    >
+      {loading ? "Redirection..." : "Payer avec Orange Money"}
+    </button>
 
-      {error && <p className="text-red-500 text-sm mt-3">{error}</p>}
-    </div>
+    {error && <p className="text-red-500 text-sm mt-3">{error}</p>}
+  </div>
+
   );
 };
 

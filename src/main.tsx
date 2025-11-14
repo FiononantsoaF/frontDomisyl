@@ -6,6 +6,7 @@ import Changepassword from './components/ChangePassword';
 import RequestPasswordReset from './components/RequestPasswordReset';
 import ProfileEdit from './components/ProfilEdit';
 import './index.css';
+import CarteCadeau from './components/cartecadeau/CarteCadeauComponent';
 
 const router = createBrowserRouter([
   {
@@ -27,6 +28,9 @@ const router = createBrowserRouter([
   {
     path:'/profile-edit',
     element: <ProfileEdit/>
+  },
+  {path:'/carte-cadeau',
+     element: <CarteCadeau/>
   },
   
   // {

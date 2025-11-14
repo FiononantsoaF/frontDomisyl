@@ -154,11 +154,11 @@ export interface Paiement {
   subscription_id: number;
 }
 
-interface ValidateResponsePaiement {
-  success: boolean;
-  message: string;
-  data: null;
-}
+// interface ValidateResponsePaiement {
+//   success: boolean;
+//   message: string;
+//   data: null;
+// }
 
 export interface AppointmentResponse {
   success: boolean;
@@ -230,10 +230,46 @@ export interface Appointmentsall {
   data : AllAppointments[];
 }
 
+// types/payment.types.ts
+
+export interface Paiement {
+  amount: number;
+  price: number;
+  client_phone: string;
+  appointment_id: number;
+  subscription_id: number;
+}
+
+export interface ValidateResponsePaiement {
+  success: boolean;
+  message: string;
+  data?: {
+    reference: string;
+    serverCorrelationId: string;
+    status: 'pending' | 'completed' | 'failed';
+    transaction_id: number;
+    notification_method: 'callback' | 'polling';
+  };
+  errors?: Record<string, string[]>;
+}
+
+export interface PaymentStatusResponse {
+  success: boolean;
+  data?: {
+    reference: string;
+    status: 'pending' | 'completed' | 'failed';
+    amount: number;
+    created_at: string;
+    updated_at: string;
+  };
+  message?: string;
+}
+
+export type PaymentStatus = 'pending' | 'completed' | 'failed' | 'checking';
+
 export const servicesService = {
   all: async (): Promise<ServicesWithEmployee> => {
     const response = await API.get<ServicesWithEmployee>('/service-category'); 
-
     return response.data;
   },
 
@@ -305,6 +341,47 @@ export const servicesService = {
       }
       throw error;
     }
+  },
+  checkStatus: async (reference: string): Promise<PaymentStatusResponse> => {
+    try {
+      const response = await API.get<PaymentStatusResponse>(`/mvola/status/${reference}`);
+      return response.data;
+    } catch (error: any) {
+      if (error.response && error.response.data) {
+        return error.response.data;
+      }
+      throw error;
+    }
+  },
+  
+  pollStatus: async (
+    reference: string,
+    maxAttempts: number = 60,
+    interval: number = 5000
+  ): Promise<PaymentStatusResponse> => {
+    return new Promise((resolve, reject) => {
+      let attempts = 0;
+
+      const checkInterval = setInterval(async () => {
+        attempts++;
+
+        try {
+          const statusResponse = await servicesService.checkStatus(reference);
+          if (statusResponse.data?.status !== 'pending') {
+            clearInterval(checkInterval);
+            resolve(statusResponse);
+            return;
+          }
+          if (attempts >= maxAttempts) {
+            clearInterval(checkInterval);
+            reject(new Error('Délai d\'attente dépassé pour la confirmation du paiement'));
+          }
+        } catch (error) {
+          clearInterval(checkInterval);
+          reject(error);
+        }
+      }, interval);
+    });
   },
   
   checkAdress: async (payload: string): Promise<boolean> => {
