@@ -6,21 +6,25 @@ interface PaymentInfoProps {
   isOpen: boolean;
   setIsOpen: (value: boolean) => void;
   choicePaiement: boolean;
-  setChoicePaiement: (value: boolean) => void;
+  setChoicePaiement: (method: string | null) => void;
   price : number | undefined;
-
+  onClose?: () => void;
 }
 
-export default function PaymentInfo({ isOpen, setIsOpen,choicePaiement, setChoicePaiement , price }:PaymentInfoProps) {
+export default function PaymentInfo({ isOpen, setIsOpen,choicePaiement, setChoicePaiement , price, onClose }:PaymentInfoProps) {
   const navigate = useNavigate();
+  
   const handleClose = () => {
-    setIsOpen(false);     
-    setChoicePaiement(false);
-    window.location.reload();
-    navigate("/");         
+    if (onClose) {
+      onClose();
+      return;
+    }
+    setIsOpen(false);
+    setChoicePaiement(null);
+    navigate("/");
   };
   const mvolaNumber = "038 28 127 35";
-  const orangeNumber = "032 45 491 00";
+  const orangeNumber = "037 45 491 00";
   const bankNumber = "00008 00006 05003025555 59";
 
   return (

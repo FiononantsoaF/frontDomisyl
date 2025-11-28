@@ -12,7 +12,7 @@ const AppointmentsTable: React.FC<Props> = ({ appointments }) => {
 
   return (
     <div className="overflow-x-auto rounded-xl shadow-md border border-gray-200">
-        <h3 className="text-xl font-semibold text-gray-800 mb-4" style={{ fontFamily: 'Agency FB' }} >📅 Mes Rendez-vous</h3>
+      <h3 className="text-xl font-semibold text-gray-800 mb-4" style={{ fontFamily: 'Agency FB' }} >📅 Mes Rendez-vous</h3>
         <table className="min-w-full divide-y  text-sm text-700">
         <thead className="bg-[#f18f34] text-white"  >
             <tr>

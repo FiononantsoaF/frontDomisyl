@@ -4,6 +4,8 @@ import API from '../api/axios';
 import { User, servicesService } from '../api/serviceCategoryApi';
 import { ChevronLeft } from 'lucide-react';
 import { FaUser, FaPhone, FaEnvelope, FaMapMarkerAlt } from 'react-icons/fa';
+import OverlayMessage from './OverlayMessage';
+import { useOverlay } from '../hooks/useOverlay';
 
 const ProfileEdit: React.FC = () => {
   const navigate = useNavigate();
@@ -22,6 +24,8 @@ const ProfileEdit: React.FC = () => {
   const [addressError, setAddressError] = useState<string | null>(null);
   const [emailError, setEmailError] = useState<string | null>(null);
   const [phoneError, setPhoneError] = useState<string | null>(null);
+
+  const { overlay, showOverlay, closeOverlay } = useOverlay();
 
   const getUser = (): User | null => {
     const data = localStorage.getItem('user');
@@ -75,11 +79,12 @@ const ProfileEdit: React.FC = () => {
       const response = await API.post('/user/update', formData);
       const updatedUser: User = response.data.data;
       localStorage.setItem('user', JSON.stringify(updatedUser));
-      alert("Profil mis à jour avec succès !");
+      await showOverlay("Profil mis à jour avec succès !", "success");
       navigate('/');
     } catch (err: any) {
       console.error(err);
       alert('Erreur lors de la mise à jour : ' + (err.response?.data?.message || err.message));
+      await showOverlay(err.response?.data?.message || err.message, "error");
     } finally {
       setLoading(false);
     }
@@ -90,6 +95,13 @@ const ProfileEdit: React.FC = () => {
   return (
     <>
       <div>
+          {overlay && (
+            <OverlayMessage
+              text={overlay.text}
+              type={overlay.type}
+              onClose={closeOverlay}
+            />
+          )}
         <Link 
           to="/" 
           className="flex mt-2 items-center text-[#f18f34] font-semibold hover:underline mb-4"
@@ -102,10 +114,10 @@ const ProfileEdit: React.FC = () => {
 
         {!editing ? (
           <div className="space-y-4">
-          <h2 className="text-2xl font-bold text-gray-800 mb-4 flex items-center gap-2">
-            <FaUser className="text-[#f18f34]" />
-            {userDetail.name}
-          </h2>
+            <h2 className="text-2xl font-bold text-gray-800 mb-4 flex items-center gap-2">
+              <FaUser className="text-[#f18f34]" />
+              {userDetail.name}
+            </h2>
             <div className="bg-gray-50 p-5 rounded-lg shadow-sm space-y-2">
               <p className="flex items-center gap-2">
                 <FaPhone className="text-[#f18f34] flex-shrink-0" />
@@ -133,7 +145,7 @@ const ProfileEdit: React.FC = () => {
             <input type="hidden" name="id" value={formData.id} />
 
             <div>
-              <label className="block text-sm font-medium text-gray-700 mb-1">Nom</label>
+              <label className="block text-2xl font-medium text-gray-700 mb-1">Nom</label>
               <input
                 type="text"
                 name="name"
@@ -145,7 +157,7 @@ const ProfileEdit: React.FC = () => {
             </div>
 
             <div>
-              <label className="block text-sm font-medium text-gray-700 mb-1">Téléphone</label>
+              <label className="block text-2xl font-medium text-gray-700 mb-1">Téléphone</label>
               <input
                 type="tel"
                 name="phone"
@@ -154,11 +166,11 @@ const ProfileEdit: React.FC = () => {
                 className="w-full rounded-md border border-gray-300 px-3 py-2 focus:outline-none focus:ring-2 focus:ring-[#f18f34] shadow-sm"
                 required
               />
-              {phoneError && <p className="text-red-500 text-sm mt-1">{phoneError}</p>}
+              {phoneError && <p className="text-red-500 text-2xl mt-1">{phoneError}</p>}
             </div>
 
             <div>
-              <label className="block text-sm font-medium text-gray-700 mb-1">Email</label>
+              <label className="block text-2xl font-medium text-gray-700 mb-1">Email</label>
               <input
                 type="email"
                 name="email"
@@ -167,11 +179,11 @@ const ProfileEdit: React.FC = () => {
                 className="w-full rounded-md border border-gray-300 px-3 py-2 focus:outline-none focus:ring-2 focus:ring-[#f18f34] shadow-sm"
                 required
               />
-              {emailError && <p className="text-red-500 text-sm mt-1">{emailError}</p>}
+              {emailError && <p className="text-red-500 text-2xl mt-1">{emailError}</p>}
             </div>
 
             <div>
-              <label className="block text-sm font-medium text-gray-700 mb-1">Adresse</label>
+              <label className="block text-2xl font-medium text-gray-700 mb-1">Adresse</label>
               <input
                 type="text"
                 name="address"
@@ -180,24 +192,23 @@ const ProfileEdit: React.FC = () => {
                 className="w-full rounded-md border border-gray-300 px-3 py-2 focus:outline-none focus:ring-2 focus:ring-[#f18f34] shadow-sm"
                 required
               />
-              {addressError && <p className="text-red-500 text-sm mt-1">{addressError}</p>}
+              {addressError && <p className="text-red-500 text-2xl mt-1">{addressError}</p>}
             </div>
 
-            <div className="flex gap-4 mt-4">
-              <button
-                type="submit"
-                disabled={loading}
-                className="flex-1 bg-gradient-to-r from-[#f9b131] to-[#f18f34] hover:from-[#f18f34] hover:to-[#f9b131] text-white px-5 py-3 rounded-full transition-all font-semibold shadow-lg hover:shadow-xl disabled:opacity-50 disabled:cursor-not-allowed"
-              >
-                {loading ? 'Enregistrement...' : 'Sauvegarder'}
-              </button>
-
+            <div className="flex gap-4 mt-4 text-2xl">
               <button
                 type="button"
                 onClick={() => setEditing(false)}
                 className="flex-1 border border-gray-300 px-5 py-3 rounded-full text-gray-700 hover:bg-gray-100 transition-all shadow-sm"
               >
                 Annuler
+              </button>
+              <button
+                type="submit"
+                disabled={loading}
+                className="flex-1 bg-gradient-to-r from-[#f9b131] to-[#f18f34] hover:from-[#f18f34] hover:to-[#f9b131] text-white px-5 py-3 rounded-full transition-all font-semibold shadow-lg hover:shadow-xl disabled:opacity-50 disabled:cursor-not-allowed"
+              >
+                {loading ? 'Enregistrement...' : 'Sauvegarder'}
               </button>
             </div>
           </form>

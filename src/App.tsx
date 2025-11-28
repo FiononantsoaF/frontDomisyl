@@ -3,12 +3,12 @@ import DatePicker from "react-datepicker";
 import "react-datepicker/dist/react-datepicker.css";
 import { registerLocale } from "react-datepicker";
 import { fr } from "date-fns/locale/fr";
-import { parseISO, isSameDay, min } from "date-fns";
+import { isSameDay, min } from "date-fns";
 import { Calendar, Heart, Users, MessageSquare, Award,Info,ChevronDown, List, X, ChevronLeft, Clock, MapPin, Check, Mail, Phone, CreditCard, Briefcase } from 'lucide-react';
 import { Dialog } from '@headlessui/react';
 import { format } from 'date-fns';
 import { loadStripe } from '@stripe/stripe-js';
-import { AllAppointments, Login, servicesService } from './api/serviceCategoryApi'; 
+import { Login, servicesService } from './api/serviceCategoryApi'; 
 import { Services } from './api/serviceCategoryApi';
 import { ServiceType } from './api/serviceCategoryApi';
 import { Employee } from './api/serviceCategoryApi';
@@ -33,14 +33,17 @@ import Details from './components/ServiceDetail/Details';
 import { useBlockBackNavigation}   from './hooks/useBlockBackNavigation';
 import { usePayment } from './hooks/usePayment';
 import TestimonialsSection  from './components/testimonial/TestimonialsSection';
+import CarteCadeauCode from "./pages/cartecadeau/CarteCadeauCode";
 
+import { CarteCadeauClient } from "./api/carteCadeauService";
+import OverlayMessage from './components/OverlayMessage';
+import { useOverlay } from './hooks/useOverlay';
 
-import { MapContainer, TileLayer, Marker, Popup } from 'react-leaflet';
+import ModernSelect from './components/menu/ModernSelect';
+
 import 'leaflet/dist/leaflet.css';
-import * as L from "leaflet"; 
 
-
-import { Document, Page, pdfjs } from "react-pdf"; 
+import {  pdfjs } from "react-pdf"; 
 
 registerLocale("fr", fr);
 
@@ -100,6 +103,17 @@ function App() {
   const [cgvHtml, setCgvHtml] = useState('');
   const [rgcHtml, setRgcHtml] = useState('');
 
+  const [isCarteCadeauOpen, setIsCarteCadeauOpen] = useState(false);
+  const [giftCardInfo, setGiftCardInfo] = useState<CarteCadeauClient | null>(null);
+  const [fromGift, setFromGift] = useState(false);
+
+  const [emailExists, setEmailExists] = useState(false);
+  const [checkingEmail, setCheckingEmail] = useState(false);
+  const debounceTimeout = useRef<NodeJS.Timeout | null>(null);
+
+  const { overlay, showOverlay, closeOverlay } = useOverlay();
+  
+
   const handleProfileClick = () => {
       navigate('/profile-edit');
   };
@@ -137,7 +151,6 @@ function App() {
     notes: ''
   });
 
-
   const [clientData, setClientData] = useState({
     login: '',
     password: ''
@@ -149,6 +162,7 @@ function App() {
     client_phone: '',
     subscription_id:'',
     appointment_id: '',
+    client_id:'',
     minimun:''
   });
 
@@ -163,7 +177,6 @@ function App() {
   const [subscriptions, setSubscriptions] = useState<SubscriptionList>();
   const [showMenu, setShowMenu] = useState(false);
   const navigate = useNavigate();
-  const [appointmentsAll, setAppointmentsall] = useState<AllAppointments[]>([]);
   const [disabledDates, setIsDisabled] = useState<Date[]>([]);
   const [selectedProviderId, setSelectedProviderId] = useState<string | null>(null);
   const [selectedCreneauId, setSelectedCreneauId] = useState<number | null>(null);
@@ -189,14 +202,45 @@ function App() {
     reset,
   } = usePayment();
 
-  // useEffect(() => {
-  //   if (selectedProviderId && selectedDate) {
-  //     fetchCreneaux(selectedProviderId, selectedDate);
-  //     setSelectedCreneauId(null); 
-  //   }
-  // }, [selectedProviderId, selectedDate]);
+  const menuOptions = [
+      { label: 'Menu', value: '' },
+      { label: 'Carte Cadeau', value: '/carte-cadeau' }
+    ];
 
-  // ----------
+  const menuCompte = [
+      { label: 'Mon compte', value: '' },
+      { label: 'Voir profil', value: '/profile-edit' },
+      { label: 'Déconnexion', value: 'logout' }
+    ];
+
+
+  useEffect(() => {
+      if (!formData.email) {
+        setEmailExists(false);
+        return;
+      }
+
+      // Debounce
+      if (debounceTimeout.current) clearTimeout(debounceTimeout.current);
+
+      debounceTimeout.current = setTimeout(async () => {
+        setCheckingEmail(true);
+        try {
+          const exists = await servicesService.checkEmail(formData.email); 
+          setEmailExists(exists);
+        } catch (error) {
+          console.error("Erreur lors de la vérification de l'email :", error);
+        } finally {
+          setCheckingEmail(false);
+        }
+      }, 500);
+
+      return () => {
+        if (debounceTimeout.current) clearTimeout(debounceTimeout.current);
+      };
+    }, [formData.email]);
+
+
 
   useEffect(() => {
     const handlePopState = () => {
@@ -286,7 +330,6 @@ function App() {
 
  useEffect(() => {
     setShowPaymentModal(acceptedCGV);
-
   }, [acceptedCGV]);
 
 
@@ -316,6 +359,30 @@ function App() {
       .then((data) => setRgcHtml(data))
       .catch((error) => console.error('Erreur lors du chargement RGC:', error));
   }, []);
+
+  useEffect(() => {
+    if (giftCardInfo) {
+        setSelectedService(
+          giftCardInfo.carte_cadeau_service?.service?.service_category.name || ""
+        );
+        setSelectedMassageType(
+          giftCardInfo.carte_cadeau_service?.service.id
+            ? giftCardInfo.carte_cadeau_service.service.id.toString()
+            : ""
+        );
+        // console.log("service",giftCardInfo.carte_cadeau_service?.service?.id);
+        // console.log("formule",giftCardInfo.carte_cadeau_service?.service.service_category.name);
+        setFromGift(true);
+        setFormData(prev => ({
+          ...prev,
+          name: giftCardInfo.benef_name || "",
+          phone: giftCardInfo.benef_contact || "",
+          email: giftCardInfo.benef_email || "",
+          address: ""
+        }));
+      }
+    }, [giftCardInfo]);
+
 
 
   const handleCloseModal = () => {
@@ -356,71 +423,6 @@ function App() {
     notes: ''
   });
 
-  //   if (users) {
-  //     localStorage.setItem("user", JSON.stringify(users));
-  //   }
-  //   console.log("test",localStorage.getItem("user"));
-  //   const userdetail = getUser();
-  //   setuserDetail(userdetail);
-  //   if (source === "account") {
-  //     const reponse = await servicesService.appointandsub();
-  //     setAppointments(reponse.appointments);
-  //     setSubscriptions(reponse.subscriptions);
-  //     setShowList(true); 
-  //     console.log("account -----------------");
-  //   } else if (source === "booking") {
-  //     setIsLoginOpen(false);
-  //     setIsBookingOpen(true); 
-  //     console.log("booking -----------------");
-  //   }
-  // };
-
-  // const handleLogin = async (e: React.FormEvent) => {
-  //   e.preventDefault();
-  //   if (!clientData ) {
-  //     alert("Veuillez remplir les informations");
-  //     return;
-  //   }
-  //   const payload: Login = {
-  //     login :clientData.login,
-  //     password : clientData.password,
-  //   };
-
-  //   const result = await servicesService.login(payload);
-  //   const user = result.data;
-  //   if (user && user.id !== undefined) {
-  //     localStorage.setItem("user_id", user.id.toString());
-      
-  //     const users: User = {
-  //       name: user.name.toString(),
-  //       phone: user.phone.toString(),
-  //       email: user.email ? user.email.toString() : undefined,
-  //       address : user.address,
-  //     };
-
-  //     // localStorage.setItem('user', JSON.stringify(users));
-  //     localStorage.setItem("user", JSON.stringify(users));
-  //     const reponse = await servicesService.appointandsub();
-  //     const userdetail = getUser();
-  //     setuserDetail(userdetail);
-  //     setAppointments(reponse.appointments);
-  //     setSubscriptions(reponse.subscriptions);
-  //     if (loginSource === "booking") {
-  //       setIsLoginOpen(false);
-  //       setIsBookingOpen(true); 
-  //     } else if (loginSource === "account") {
-  //       setShowList(true);
-  //     }
-  //   }
-  //   if (result.success) {
-  //     resetLoginForm();
-  //     refreshPage();
-  //   } else {
-  //     alert("Erreur : " + result.message);
-  //     resetLoginForm();
-  //   }
-  // }; 
-   
   const handleLogin = async (e: React.FormEvent) => {
       e.preventDefault();
       if (!clientData || !clientData.login || !clientData.password) {
@@ -432,7 +434,6 @@ function App() {
           login: clientData.login,
           password: clientData.password,
         };
-
         const result = await servicesService.login(payload);
 
         if (!result.success || !result.data) {
@@ -445,9 +446,11 @@ function App() {
         }
 
         const user = result.data;
+
         if (user.id !== undefined) {
           localStorage.setItem("user_id", user.id.toString());
         }
+        
         const users: User = {
           name: user.name.toString(),
           phone: user.phone.toString(),
@@ -474,7 +477,7 @@ function App() {
         console.error("Erreur lors de la connexion:", error);
         resetLoginForm();
       }
-    };
+  };
 
   const fillBookingFormWithUserData = (userData: User) => {
       setFormData({
@@ -629,6 +632,7 @@ function App() {
   const handleBooking = async (e: React.FormEvent) => {
     e.preventDefault();
     setResponse(null);
+    
     if (!selectedDate) {
       alert("Veuillez sélectionner une date");
       return;
@@ -637,16 +641,24 @@ function App() {
       alert("Veuillez sélectionner un créneau.");
       return;
     }
+
     if(formData.password != formData.confirmPassword){
       alert("Veuillez saisir le bon mot de passe");
       return;
     } 
+
     if(addressError != null){
       alert("Veuillez saisir une adresse valide");
       return;
     }
+
     if(phoneError != null){
       alert("Veuillez saisir un numéro de téléphone valide");
+      return;
+    }
+
+    if (!localStorage.getItem("user") && emailExists) {
+      alert("Cet email est déjà associé à un compte existant. Veuillez vérifier.");
       return;
     }
     setLoading(true);
@@ -670,16 +682,32 @@ function App() {
         start_times: startDateTime,
         end_times : startDateTime,
         comment: formData.notes,
-        from_subscription: !!selectedSubId && Number(selectedSubId) > 0
+        from_subscription: !!selectedSubId && Number(selectedSubId) > 0,
+        gift_code: giftCardInfo?.code ?? null
       };
-
       const result = await servicesService.book(payload);
       if (result.success && result.data) {
-          setPaiement(result.data);
+          setPaiement(result.data); 
+          if (!localStorage.getItem("user")) {
+
+            const user = await servicesService.getClientById(result.data.client_id);
+            if (user) {
+              localStorage.setItem("user", JSON.stringify(user));
+              localStorage.setItem("user_id", result.data.client_id.toString());
+            } else {
+               alert("Erreur lors de la création du compte : ");
+              return;
+            }
+          }    
+          const response = await servicesService.appointandsub();
+          setAppointments(response.appointments);
+          setSubscriptions(response.subscriptions);   
           if(result.data.already_paid){
-              alert(result.message);
-              refreshPage();
+              await showOverlay(result.message, "success");
+              // alert(result.message);
+              // refreshPage();
               resetBookingForm();
+              setShowList(true);
               setIsBookingOpen(false);
           } else {
               let price = 0;
@@ -697,10 +725,16 @@ function App() {
               client_phone: result.data.client_phone || '',
               subscription_id: (result.data.subscription_id ?? '').toString(),
               appointment_id: result.data.appointment_id.toString(),
+              client_id:result.data.client_id.toString(),
               minimun : minimum.toString()
             });
 
-            alert('Passez au paiement pour valider votre réservation');
+            // alert('Passez au paiement pour valider votre réservation');
+            await showOverlay("Passez au paiement pour valider votre réservation", "success");
+            // setOverlay({ text: "Passez au paiement pour valider votre réservation", type: "info" });
+            // setTimeout(() => {
+            //   setShowPaymentChoice(true);
+            // }, 500); 
             // setIsPaiementOpen(true);
             setShowPaymentChoice(true);
             resetBookingForm();
@@ -797,8 +831,14 @@ function App() {
   const { user } = useContext(UserContext);
   
   const getUser = (): User | null => {
-    const data = localStorage.getItem('user');
-    return data ? JSON.parse(data) as User: null;
+    try {
+      const data = localStorage.getItem('user');
+      if (!data || data === "undefined") return null;
+      return JSON.parse(data) as User;
+    } catch (error) {
+      console.error("Erreur lors de la lecture de l'utilisateur :", error);
+      return null;
+    }
   };
 
   const isDisabled = (date: Date) =>
@@ -904,34 +944,51 @@ function App() {
                 </label>
               </div>
                 <div className="flex flex-col md:flex-row gap-4 justify-center mt-4"> 
-                  {showPaymentModal && <PaymentInfo isOpen={showPaymentModal} setIsOpen={setShowPaymentModal} choicePaiement={showPaymentChoice} setChoicePaiement={setShowPaymentChoice} price={paiement?.price_promo ?? paiement?.price}/>} 
-                  {/* <button
+                  {/* {showPaymentModal && 
+                    <PaymentInfo 
+                          isOpen={showPaymentModal}   
+                          setIsOpen={(isOpen: boolean) => {
+                                              setShowPaymentModal(isOpen);   
+                                              if (!isOpen) {
+                                                setShowList(true);     
+                                              }
+                                            }}
+                          choicePaiement={showPaymentChoice}
+                          setChoicePaiement={setShowPaymentChoice}
+                          price={paiement?.price_promo ?? paiement?.price}/>
+                    }  */}
+                  <button
                     onClick={() => setSelectedMethod('mvola')}
                     disabled={!acceptedCGV}
                     className="flex-1 bg-gradient-to-r from-[#f9b131] to-[#f18f34] hover:from-[#f18f34] hover:to-[#f9b131] text-dark px-4 py-3.5 rounded-lg transition-all flex items-center justify-center gap-2 disabled:opacity-50 disabled:cursor-not-allowed font-bold shadow-md hover:shadow-lg"
                   >
                     MVola
-                  </button> */}
+                  </button> 
                   {/* <button
                     onClick={() => setSelectedMethod('stripe')}
                     className="flex-1 bg-gradient-to-r from-[#f9b131] to-[#f18f34] hover:from-[#f18f34] hover:to-[#f9b131] text-dark px-4 py-3.5 rounded-lg transition-all flex items-center justify-center gap-2 disabled:opacity-50 disabled:cursor-not-allowed font-bold shadow-md hover:shadow-lg"
                   >
                     Virement bancaire
                   </button> */}
-                  {/* <button
+                  <button
                     onClick={() => setSelectedMethod('orange')}
                     disabled={!acceptedCGV}
                     className="flex-1 bg-gradient-to-r from-[#f9b131] to-[#f18f34] hover:from-[#f18f34] hover:to-[#f9b131] text-dark px-4 py-3.5 rounded-lg transition-all flex items-center justify-center gap-2 disabled:opacity-50 disabled:cursor-not-allowed font-bold shadow-md hover:shadow-lg"
                   >
                     Orange Money
-                  </button>  */}
+                  </button> 
                 </div>
             </div>
           </div>
         )}
         {/* vue paiement orange */}
         {selectedMethod === "orange" && (
-          <OrangeMoney amount={paiement?.price_promo ?? paiement?.price ?? 0} />
+          <OrangeMoney
+              amount={paiement?.price_promo ?? paiement?.price ?? 0}
+              client_id={Number(paiementData?.client_id)}
+              subscription_id={Number(paiementData?.subscription_id)}
+              appointment_id={Number(paiementData?.appointment_id)}
+           />
         )}
 
         {/* Vue paiement MVola */}
@@ -1065,9 +1122,7 @@ function App() {
   );
 
   const renderBookingForm = () => {
-    const isServiceDisabled = Boolean(preSelectedService);
-    const isMassageTypeDisabled = Boolean(preSelectedMassageType);
-     return (
+    return (
     <div className="max-h-[80vh] overflow-y-auto px-4">
     <form 
         onSubmit={handleBooking} 
@@ -1087,7 +1142,7 @@ function App() {
             }}
             className="w-full rounded-md border border-gray-300 px-2 py-1 focus:outline-none focus:ring-2 focus:ring-[#f18f34]"
             required
-            disabled={fromSubscription} 
+            disabled={fromSubscription || fromGift} 
           >
             <option value="">Sélectionnez une formule</option>
             {services.map((service, index) => (
@@ -1111,7 +1166,7 @@ function App() {
               }}
               className="w-full rounded-md border border-gray-300 px-2 py-1 focus:outline-none focus:ring-2 focus:ring-[#f18f34]"
               required
-              disabled={fromSubscription} 
+              disabled={fromSubscription || fromGift } 
             >
               <option value="">Sélectionnez une prestation</option>
             {getServiceTypes().map((type, index) => (
@@ -1212,79 +1267,6 @@ function App() {
             ) : null}
           </div>
         )}
-
-        {/* {selectedMassageType   && (
-          <div className="mt-4">
-            <label className="block text-sm font-medium text-gray-700 mb-2">
-              Sélectionnez un prestataire *
-            </label>
-            <div className="grid grid-cols-2 md:grid-cols-2 gap-2">
-              {employees.filter(provider =>
-                provider.services?.some(s => s.id == Number(selectedMassageType))
-              ).length > 0 ? (
-                employees
-                  .filter(provider =>
-                    provider.services?.some(s => s.id == Number(selectedMassageType))
-                  )
-                  .map(provider => (
-                    <div
-                      key={provider.id}
-                      className={`border rounded-lg p-1 text-center shadow-xs cursor-pointer transition hover:shadow-md text-sm font-medium ${
-                        selectedProviderId === provider.id.toString()
-                          ? 'border-[#f18f34] bg-orange-50'
-                          : 'border-gray-200 bg-white'
-                      }`}
-                      onClick={() => {
-                        setSelectedProviderId(provider.id.toString());
-                        setSelectedCreneauId(null);
-                      }}
-                    >
-                      <span className="truncate block text-xs font-medium text-gray-700">
-                        {provider.name}
-                      </span>
-                    </div>
-                  ))
-                  ) : (
-                    <p className="text-xs text-gray-500 col-span-2">
-                      Aucun prestataire disponible
-                    </p>
-                  )}
-                </div>
-              {selectedProviderId && availableCreneaux.length > 0 ? (
-                <div className="mt-4">
-                  <label className="block text-sm font-medium text-gray-700 mb-1">
-                    Créneaux disponibles *
-                  </label>
-                  <div className="flex flex-wrap gap-1">
-                    {availableCreneaux.map((creneau) => (
-                      <button
-                        key={creneau.id}
-                        type="button"
-                        onClick={() => !creneau.is_taken && setSelectedCreneauId(creneau.id)}
-                        className={`px-1 py-0 rounded-md text-xs border transition-colors ${
-                          selectedCreneauId === creneau.id
-                            ? 'bg-[#f18f34] text-white border-[#f18f34]'
-                            : creneau.is_taken
-                              ? 'bg-gray-200 text-gray-400 cursor-not-allowed border-gray-300'
-                              : 'bg-gray-100 text-black border-gray-200 hover:bg-gray-200'
-                        }`}
-                        disabled={creneau.is_taken}
-                        aria-disabled={creneau.is_taken}
-                        title={creneau.is_taken ? 'Indisponible' : 'Disponible'}
-                      >
-                        {creneau.time}
-                      </button>
-                    ))}
-                  </div>
-                </div>
-              ) : (
-                <p className="text-xs text-gray-500 mt-2">
-                  Aucun créneau disponible
-                </p>
-              )}
-
-          </div>
-        )} */}
       </div>
 
       <div className="space-y-4">
@@ -1299,7 +1281,7 @@ function App() {
             onChange={handleInputChange}
             className="w-full rounded-md border border-gray-300 px-2 py-1 focus:outline-none focus:ring-2 focus:ring-[#f18f34]"
             required
-            readOnly={fromSubscription}
+            readOnly={fromSubscription || fromGift}
           />
         </div>
 
@@ -1314,7 +1296,7 @@ function App() {
             onChange={handleInputChange}
             className="w-full rounded-md border border-gray-300 px-2 py-1 focus:outline-none focus:ring-2 focus:ring-[#f18f34]"
             required
-            readOnly={fromSubscription}
+            readOnly={fromSubscription || fromGift }
           />
           {phoneError && <p className="text-red-500 text-sm mt-1">{phoneError}</p>}
         </div>
@@ -1332,7 +1314,13 @@ function App() {
             required
             readOnly={fromSubscription}
           />
+          
+          {!localStorage.getItem("user") && emailExists && !checkingEmail && (
+            <p className="text-xs text-red-600 mt-1">Cet email est déjà associé à un compte existant.</p>
+          )}
+          
         </div>
+
         {!localStorage.getItem("user_id") && !localStorage.getItem("user") && (
         <>
         <div>
@@ -1463,7 +1451,7 @@ function App() {
   
   if (showList) {
     return (
-      <div className="min-h-screen bg-white px-4 pt-4">
+      <div className="min-h-screen px-4 pt-4 bg-white ">
         <div className="max-w-7xl mx-auto mb-4">
           <button
             onClick={() => {
@@ -1481,12 +1469,22 @@ function App() {
           <div className="flex justify-end w-full pr-4">
             <button
               onClick={() => setContact(true)}
-              className="bg-[#f18f34] text-dark font-semibold rounded-full text-sm sm:text-base cursor-pointer focus:outline-none px-4 h-10 flex items-center"
+              className="text-dark underline font-semibold rounded-full text-sm sm:text-base cursor-pointer focus:outline-none px-4 h-10 flex items-center"
               style={{ fontFamily: 'Agency FB, sans-serif' }}
             >
               Coordonnées de paiement
             </button>
-            <select
+              <ModernSelect 
+                options={menuCompte}
+                placeholder="Mon compte"
+                onSelect={(value) => {
+                  if (value === "profile") handleProfileClick();
+                  if (value === "logout") handleLogout();
+                }}
+              />
+
+
+            {/* <select
               defaultValue=""
               onChange={(e) => {
                 if (e.target.value === 'profile') handleProfileClick();
@@ -1499,7 +1497,7 @@ function App() {
               <option value="" disabled>👤 Mon compte</option>
               <option value="profile">Voir profil</option>
               <option value="logout">Déconnexion</option>
-            </select>
+            </select> */}
           </div>
 
           {contact && (
@@ -1514,54 +1512,6 @@ function App() {
             </div>
           )}
         </div>
-
-        {/* <div className="bg-gray-50 px-4 py-2 text-sm text-gray-700 flex flex-wrap items-center justify-between">
-          <button
-            onClick={() => {
-              setShowList(false);
-              setIsLoginOpen(false);
-              refreshPage();
-            }}
-            className="text-[#f18f34] font-semibold hover:underline"
-          >
-            ← Retour à l'accueil
-          </button>
-          <div className="flex items-center gap-2">
-            <button
-              onClick={() => {
-                setContact(true);
-              }}
-              className="bg-[#f18f34] px-4 py-2 text-dark font-semibold rounded-full  h-9 text-sm sm:text-base md:text-lg cursor-pointer focus:outline-none"
-              style={{ fontFamily: "Agency FB, sans-serif" }}
-            >
-              Coordonnées de paiement
-            </button>
-
-            {contact && (
-              <PaymentInfoReview
-                isOpen={contact}
-                setIsOpen={setContact}
-                choicePaiement={false}
-                setChoicePaiement={() => {}}
-                price={undefined}
-              />
-            )}
-            <select
-              defaultValue=""
-              onChange={(e) => {
-                if (e.target.value === "profile") handleProfileClick();
-                else if (e.target.value === "logout") handleLogout();
-                e.target.value = "";
-              }}
-              className="bg-white text-dark px-4 py-2 rounded-full text-sm sm:text-base md:text-lg cursor-pointer  h-9 md:h-9 focus:outline-none "
-              style={{ fontFamily: "Agency FB, sans-serif" }}
-            >
-              <option value="" disabled>👤 Mon compte</option>
-              <option value="profile">Voir profil</option>
-              <option value="logout">Déconnexion</option>
-            </select>
-          </div>
-        </div> */}
         <nav className="relative z-10 flex items-center justify-between px-6 py-4 max-w-7xl mx-auto">
           <div className="flex items-center">
             {logo && (
@@ -1660,6 +1610,7 @@ function App() {
     }
 
     return (
+  
       <Details
         showServices={showServices}
         selectedShowService={selectedShowService}
@@ -1696,152 +1647,16 @@ function App() {
         selectedMassageType={selectedMassageType}
         selectedType={selectedType}
       />
-    // return (
-    //   <div className="min-h-screen bg-white">
-    //     <div className="max-w-7xl mx-auto px-4 py-8">
-    //       <button
-    //         onClick={() => setShowServices(false)}
-    //         className="flex items-center text-gray-600 hover:text-gray-900 mb-8"
-    //       >
-    //         <ChevronLeft className="w-5 h-5 mr-2" />
-    //         Retour
-    //       </button>
-    //       <div className="grid md:grid-cols-2 gap-12">
-    //         <div>
-    //           <h1 className="mx-auto text-4xl mb-5 text-[#1d1d1b] text-center" style={{ fontFamily: 'Agency FB, sans-serif' }}>
-    //             {service.title}
-    //           </h1>
-    //           <img
-    //             src={service.image}
-    //             alt={service.title}
-    //             className="w-full h-[400px] object-cover rounded-2xl"
-    //           />
-    //           {/* <button
-    //             onClick={() =>{
-    //                 handleBookNow(service.title);
-    //                 const user = localStorage.getItem("user");
-    //                 const userId = localStorage.getItem("user_id");
-
-    //                 if (user && userId) {
-    //                   setIsBookingOpen(true);
-    //                 } else {
-    //                   setChoiceClient(true);
-    //                 }
-    //               }}
-    //             className="mx-auto bg-[#f18f34] hover:bg-[#f9b131] text-black px-4 py-1 rounded-full transition-colors flex items-center justify-center"
-    //             style={{ fontFamily: 'Agency FB, sans-serif', display: 'block' }}
-    //           >
-    //             Réserver 
-    //           </button> */}
-
-    //         </div>
-    //         <div>
-    //           <div className="mb-8">
-    //             <div className="space-y-4">
-    //               {Array.isArray(service.details?.types) &&
-    //                service.details.types
-    //                 .filter(type => {
-    //                   if (!selectedService) return true;
-    //                   if (selectedService && !selectedMassageType) {
-    //                     return selectedService === service.title;
-    //                   }
-    //                   return selectedService === service.title && selectedMassageType === type.id;
-    //                 })
-
-    //                 // .filter(type => {
-    //                 //   if (selectedService && !selectedMassageType) return true;
-    //                 //   if (!selectedService || !selectedMassageType) return true;
-
-    //                 //   return selectedService === service.title && selectedMassageType === type.id;
-
-    //                 // })
-    //                .map((type, index) => (
-    //                 <div key={index} className="bg-gray-50 p-4 rounded-lg ">
-    //                   <div className="mb-1 flex items-center gap-1">
-    //                     {type.price_promo && (
-    //                       <span className="inline-flex items-center gap-1 bg-red-500 text-white text-xs font-semibold px-2 py-1 rounded-full shadow-sm">
-    //                         <Sparkles className="w-2 h-2" />
-    //                         Promotion
-    //                       </span>
-    //                     )}
-    //                       <button
-    //                         onClick={() => {
-    //                           handleBookNowPrestation(service.title, type.id);
-    //                           const user = localStorage.getItem("user");
-    //                           const userId = localStorage.getItem("user_id");
-
-    //                           if (user && userId) {
-    //                             setIsBookingOpen(true);
-    //                           } else {
-    //                             setChoiceClient(true);
-    //                           }
-    //                         }}
-    //                         className="bg-[#f18f34] hover:bg-[#f9b131] text-dark text-sm font-medium px-3 py-1 rounded-md shadow ml-auto"
-    //                             style={{ fontFamily: 'Agency FB, sans-serif' }}>
-    //                         Réserver
-    //                       </button>
-    //                   </div>
-    //                   <div className="flex justify-between items-center mb-2">
-    //                       <h3 className="text-lg font-semibold" translate="no">{type.title}</h3>
-    //                       <div className="flex items-center gap-3">
-    //                         {type.price_promo ? (
-    //                           <>
-    //                             <span className="inline-flex items-center gap-2">
-    //                               <span className="line-through text-gray-400">
-    //                                 {type.price}
-    //                                 {Number(type.validity_days) === 30 ? '' : ''}
-    //                               </span>
-    //                               <span className="text-[#f18f34] font-semibold">
-    //                                 {type.price_promo}
-    //                                 {Number(type.validity_days) === 30 ? '/mois' : ''}
-    //                               </span>
-
-    //                             </span>
-    //                           </>
-    //                         ) : (
-    //                           <span className="text-[#f18f34] font-semibold">
-    //                             {type.price}
-    //                             {Number(type.validity_days) === 30 ? '/mois' : ''}
-    //                           </span>
-    //                         )}
-    //                     </div>
-    //                   </div>
-    //                   <div className="flex items-center text-gray-500 text-sm justify-between">
-    //                     <div dangerouslySetInnerHTML={{ __html: type.description }} />
-    //                     {type.sessions.some(session => parseInt(session.session_per_period) > 0) && (
-    //                       <div className="ml-auto">
-    //                         <button
-    //                           onClick={() => handleShowTypeDetails(type)}
-    //                           title='Afficher détails'
-    //                           className="w-fit bg-white hover:bg-grey text-black px-4 py-1 rounded-full transition-colors flex items-center justify-center gap-1"
-    //                           // style={{ fontFamily: 'Agency FB, sans-serif' }}
-    //                         >
-    //                         <ChevronDown 
-    //                           className={`w-6 h-6 transition-transform duration-300 ${selectedType?.id === type.id ? 'rotate-180' : ''}`} 
-    //                         />
-    //                         </button>
-    //                       </div>
-    //                     )}
-    //                   </div>
-    //                   {selectedType?.title === type.title && (
-    //                     <div className="mt-4 p-4 bg-[#f9b131] from-orange-100 to-white border border-orange-300 rounded-xl">
-    //                       <div dangerouslySetInnerHTML={{ __html: type.detail }} />
-    //                     </div>
-    //                   )}
-    //                 </div>
-    //               ))}
-    //             </div>
-    //             <div style={{ fontFamily: 'Agency FB, sans-serif', display: 'block' }} >{service.remarque}</div>
-    //           </div>
-    //         </div>
-    //       </div>
-    //     </div>
-    //   </div>
-    // );
   }
-
   return (
     <div className="min-h-screen bg-white mb-5">
+      {overlay && (
+        <OverlayMessage
+          text={overlay.text}
+          type={overlay.type}
+          onClose={closeOverlay}
+        />
+      )}
       <header className="relative h-screen">
         <div 
           className="absolute inset-0 bg-cover bg-center bg-black/10"
@@ -1878,18 +1693,19 @@ function App() {
             >
               <option value="">Menu</option>
               <option value="/carte-cadeau">Carte Cadeau</option>
-              <option value="/offres-du-mois">Offres du mois</option>
-              <option value="/mes-cartes">Mes cartes cadeaux</option>
-              <option value="/historique-cartes">Historique des achats</option>
-              <option value="/promotions">Promotions</option>
-              <option value="/nouveautes">Nouveautés</option>
             </select> */}
+            <ModernSelect 
+              options={menuOptions}
+              placeholder="Menu"
+              onSelect={() => {}}
+            />
+
             <button 
               onClick={() => {
                 setLoginSource("account"); 
                 openLoginModal(); 
               }}
-              className="bg-[#f18f34] hover:bg-[#f9b131] text-white text-bold px-4 sm:px-6 py-2 rounded-full transition-colors text-sm sm:text-base md:text-lg"
+              className="bg-[#f18f34] hover:bg-[#f9b131] text-white text-bold px-4 sm:px-6 py-1 rounded-full transition-colors text-sm sm:text-base md:text-lg"
               style={{ fontFamily: 'Agency FB, sans-serif' }}
             >
               Mon Compte
@@ -1907,6 +1723,26 @@ function App() {
             directement chez vous pour un maximum de confort.
           </p>
           <div className="flex flex-col sm:flex-row gap-2 sm:gap-3">
+            <button 
+              onClick={() => setIsCarteCadeauOpen(true)}
+              className="bg-[#f9b131] hover:bg-[#fdc800] text-[#1d1d1b] z-20 px-6 sm:px-8 py-3 rounded-full flex items-center gap-2 transition-colors text-xs sm:text-sm md:text-base"
+              style={{ fontFamily: 'Agency FB, sans-serif',
+                 pointerEvents: 'auto'
+               }}
+              
+            >
+              <Calendar className="w-4 h-4" />
+              Prendre RDV via carte cadeau
+            </button>
+            <CarteCadeauCode
+                isOpen={isCarteCadeauOpen}
+                onClose={() => setIsCarteCadeauOpen(false)}
+                onSuccess={(data) => {
+                  setGiftCardInfo(data); 
+                  setIsCarteCadeauOpen(false);
+                  setIsBookingOpen(true);   
+                }}
+            />
             <button 
               onClick={() => {
                 const user = localStorage.getItem("user");
@@ -2022,31 +1858,7 @@ function App() {
       </section>
 
       {/*Temoignage client */}
-      {/* <TestimonialsSection /> */}
-      {/* <section id="temoingnage" className="py-20 px-4">
-            <div className="max-w-5xl mx-auto">
-                <h2 
-                  className="text-4xl text-center mb-8 text-[#1d1d1b]"
-                  style={{ fontFamily: 'Agency FB, sans-serif' }}
-                >
-                  Temoignage client
-                </h2>
-            </div>
-            <div className="flex flex-col md:flex-row items-center justify-center gap-6">
-                <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-8">
-                  <div className="p-6 flex-1 flex flex-col">
-                      <div className="h-48 ">
-                          <img 
-                            src="/image_1.jpg" 
-                            alt="Service" 
-                            className="w-full h-full object-cover hover:scale-110 transition-transform duration-300"
-                          />
-                      </div>
-                  </div>
-                </div>
-            </div>
-      </section> */}
-
+      <TestimonialsSection />
       {/* Contact Section */}
       <section className="py-16 px-6 bg-gray-50">
         <div className="max-w-7xl mx-auto">

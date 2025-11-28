@@ -19,7 +19,7 @@ export default function PaymentInfoReview({ isOpen, setIsOpen,setChoicePaiement 
     navigate("/");         
   };
   const mvolaNumber = "038 28 127 35";
-  const orangeNumber = "032 45 491 00";
+  const orangeNumber = "037 45 491 00";
   const bankNumber = "00008 00006 05003025555 59";
 
   return (

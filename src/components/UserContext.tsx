@@ -17,7 +17,6 @@ export const UserProvider = ({ children }: { children: ReactNode }) => {
     return stored ? (JSON.parse(stored) as User) : null;
   });
 
-  // Fonction pour mettre à jour user et localStorage en même temps
   const setUser = (newUser: User | null) => {
     setUserState(newUser);
     if (newUser) {

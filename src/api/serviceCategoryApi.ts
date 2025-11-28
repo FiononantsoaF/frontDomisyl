@@ -1,6 +1,7 @@
 import API, {ApiResponse} from './axios';
 
 export interface Services {
+  id: string;
   title : string;
   description: string;
   remarque: string;
@@ -115,6 +116,7 @@ export interface BookingPayload {
   end_times: string; 
   comment?: string;
   from_subscription: boolean;
+  gift_code: string | null;
 }
 
 export interface Login {
@@ -134,6 +136,7 @@ interface BookingResponse {
 export interface PaiementData {
   appointment_id: number;
   subscription_id ?: number;
+  client_id : number;
   price: number;
   price_promo:number;
   client_phone?: string;
@@ -230,8 +233,6 @@ export interface Appointmentsall {
   data : AllAppointments[];
 }
 
-// types/payment.types.ts
-
 export interface Paiement {
   amount: number;
   price: number;
@@ -276,7 +277,6 @@ export const servicesService = {
   book: async (payload: BookingPayload): Promise<BookingResponsePayement> => {
     try {
       const response = await API.post<BookingResponsePayement>('/appointments', payload);
-
       return response.data;
     } catch (error: any) {
 
@@ -395,13 +395,49 @@ export const servicesService = {
     const regex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
     return regex.test(email.trim());
   },
+
   checkPhoneNumber: async (phone: string): Promise<boolean> => {
     const cleaned = phone.replace(/\D/g, '');
     if (cleaned.length !== 10) return false;
     const prefixes = ['034', '038', '037', '032', '033'];
     return prefixes.some(prefix => cleaned.startsWith(prefix));
-  }
+  },
+  checkEmail: async (email: string): Promise<boolean> => {
+    if (!email) return false;
+    try {
+      const response = await API.get(`/check-email?email=${encodeURIComponent(email)}`);
+      return response.data.exists;
+    } catch (error: any) {
+      if (error.response?.status === 422) return false;
+      return false;
+    }
+  },
+  checkPassword: async (password: string, email:string): Promise<boolean> => {
+    if (!password) return false;
+    try {
+      const response = await API.post(`/check-password`, {
+        password: password.trim(),
+        email: email
+      });
+      console.log(response);
+      return response.data;
 
+    } catch (error: any) {
+      if (error.response?.status === 422) return false;
+      return false;
+    }
+  },
+  getClientById: async (client_id: number): Promise<User | null> => {
+    try {
+      if (!client_id) return null;
+      const response = await API.get(`/getClientById?client_id=${client_id}`);
+      return response.data.data ?? null;
+
+    } catch (error: any) {
+      if (error.response?.status === 422) return null;
+      return null;
+    }
+  },
 
 
 };
