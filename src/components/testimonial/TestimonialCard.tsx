@@ -3,6 +3,7 @@ import React from 'react';
 interface TestimonialCardProps {
   file_path: string;
   is_active?: boolean;
+  
 }
 
 const TestimonialCard: React.FC<TestimonialCardProps> = ({ file_path, is_active }) => {

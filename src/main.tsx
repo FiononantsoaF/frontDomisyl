@@ -1,64 +1,72 @@
 import { StrictMode } from 'react';
 import { createRoot } from 'react-dom/client';
-import { createBrowserRouter, RouterProvider , Navigate} from 'react-router-dom';
+import { createBrowserRouter, RouterProvider, Navigate } from 'react-router-dom';
+
 import App from './App';
 import Changepassword from './components/ChangePassword';
 import RequestPasswordReset from './components/RequestPasswordReset';
 import ProfileEdit from './components/ProfilEdit';
-import './index.css';
+
 import CarteCadeau from './components/cartecadeau/CarteCadeauComponent';
+import PaiementCarteCadeauPage from "./pages/cartecadeau/PaiementCarteCadeauPage";
+
+import SuccessPayment from "./pages/urlpayment/SuccessPayment";
+import CancelPayment from "./pages/urlpayment/CancelPayment";
+import NotifPayment from "./pages/urlpayment/NotifPayment";
+
+import './index.css';
 
 const router = createBrowserRouter([
   {
     path: '/',
     element: <App />,
   },
+
+  // reset password
   {
-    path: '*', 
-    element: <Navigate to="/" replace />,
-  },
-  {
-  path:'/password-reset/:token',
-     element: <Changepassword/>
+    path: '/password-reset/:token',
+    element: <Changepassword />
   },
   {
-    path:'/password_reset',
-    element: <RequestPasswordReset/>
+    path: '/password_reset',
+    element: <RequestPasswordReset />
+  },
+
+  // profile
+  {
+    path: '/profile-edit',
+    element: <ProfileEdit />
+  },
+
+  // carte cadeau
+  {
+    path: '/carte-cadeau',
+    element: <CarteCadeau />
   },
   {
-    path:'/profile-edit',
-    element: <ProfileEdit/>
+    path: '/paiement-carte-cadeau',
+    element: <PaiementCarteCadeauPage />
   },
-  {path:'/carte-cadeau',
-     element: <CarteCadeau/>
+
+  // 🔥 URLs ORANGE MONEY
+  {
+    path: '/success',
+    element: <SuccessPayment />
   },
-  
-  // {
-  //   path: '/login',
-  //   element: <Login />,
-  // },
-  // {
-  //   path: '/admin',
-  //   element: <DashboardLayout />,
-  //   children: [
-  //     {
-  //       index: true,
-  //       element: <Dashboard />,
-  //     },
-  //     {
-  //       path: 'clients',
-  //       element: <Clients />,
-  //     },
-  //     {
-  //       path: 'appointments',
-  //       element: <Appointments />,
-  //     },
-  //     {
-  //       path: 'services',
-  //       element: <Services />,
-  //     },
-  //   ],
-  // },
+  {
+    path: '/cancel',
+    element: <CancelPayment />
+  },
+  {
+    path: '/notif',
+    element: <NotifPayment />
+  },
+
+  // redirect unknown route
+  {
+    path: '*',
+    element: <Navigate to="/" replace />
+  },
 ]);
 
 createRoot(document.getElementById('root')!).render(

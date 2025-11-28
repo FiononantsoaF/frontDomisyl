@@ -38,9 +38,7 @@ const TestimonialsSection: React.FC = () => {
   };
 
   if (loading) return <p className="text-center py-10">Chargement...</p>;
-
   const showArrows = testimonials.length > 3;
-
   return (
     <section id="temoignage" className="py-10 px-4 bg-white">
       <div className="max-w-5xl mx-auto mb-6">

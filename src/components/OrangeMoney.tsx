@@ -2,10 +2,18 @@ import React, { useState } from "react";
 import API from "../api/axios";
 
 interface OrangeMoneyPaymentProps {
-  amount: number; 
+  amount: number;
+  client_id: number;
+  subscription_id: number | null;
+  appointment_id: number | null;
 }
 
-const OrangeMoney: React.FC<OrangeMoneyPaymentProps> = ({ amount }) => {
+
+const OrangeMoney: React.FC<OrangeMoneyPaymentProps> = ({  
+  amount, 
+  client_id, 
+  subscription_id,
+  appointment_id }) => {
   const [loading, setLoading] = useState<boolean>(false);
   const [error, setError] = useState<string | null>(null);
 
@@ -19,15 +27,19 @@ const OrangeMoney: React.FC<OrangeMoneyPaymentProps> = ({ amount }) => {
     setError(null);
 
     try {
-      const response = await API.post("/orangemoney/pocess-payement", { amount });
+      const response = await API.post("/orangemoney/pocess-payment", {
+        amount,
+        client_id,
+        subscription_id,
+        appointment_id});
       if (response.data.payment_url) {
-        window.location.href = response.data.payment_url;
+           window.location.href = response.data.payment_url;
       } else {
-        setError("Impossible de récupérer l'URL de paiement.");
+          setError("Impossible de récupérer l'URL de paiement.");
       }
     } catch (err: any) {
-      console.error(err);
-      setError("Erreur lors de la connexion à l'API.");
+        console.error(err);
+        setError("Erreur lors de la connexion à l'API.");
     } finally {
       setLoading(false);
     }
