@@ -91,28 +91,28 @@ export default function PaymentStep({
             </div>
 
             <div className="flex flex-col md:flex-row gap-4 justify-center mt-4">
-                    <button
+                    {/* <button
                     onClick={() => setSelectedMethod('mvola')}
                     disabled={!acceptedCGV}
                     className="flex-1 bg-gradient-to-r from-[#f9b131] to-[#f18f34] hover:from-[#f18f34] hover:to-[#f9b131] text-dark px-4 py-3.5 rounded-lg transition-all flex items-center justify-center gap-2 disabled:opacity-50 disabled:cursor-not-allowed font-bold shadow-md hover:shadow-lg"
                   >
                     MVola
-                  </button>
+                  </button> */}
                   {/* <button
                     onClick={() => setSelectedMethod('stripe')}
                     className="flex-1 bg-gradient-to-r from-[#f9b131] to-[#f18f34] hover:from-[#f18f34] hover:to-[#f9b131] text-dark px-4 py-3.5 rounded-lg transition-all flex items-center justify-center gap-2 disabled:opacity-50 disabled:cursor-not-allowed font-bold shadow-md hover:shadow-lg"
                   >
                     Virement bancaire
                   </button> */}
-                   <button
+                   {/* <button
                     onClick={() => setSelectedMethod('orange')}
                     disabled={!acceptedCGV}
                     className="flex-1 bg-gradient-to-r from-[#f9b131] to-[#f18f34] hover:from-[#f18f34] hover:to-[#f9b131] text-dark px-4 py-3.5 rounded-lg transition-all flex items-center justify-center gap-2 disabled:opacity-50 disabled:cursor-not-allowed font-bold shadow-md hover:shadow-lg"
                   >
                     Orange Money
-                  </button>  
+                  </button>   */}
 
-                {/* {showPaymentModal && (
+                {showPaymentModal && (
                   <PaymentInfo
                     isOpen={showPaymentModal}
                     setIsOpen={setShowPaymentModal}
@@ -121,7 +121,7 @@ export default function PaymentStep({
                     price={paiement?.price_promo ?? paiement?.price}
                     onClose={() => navigate("/carte-cadeau?frompayment=1")}
                   />
-                )} */}
+                )}
 
 
             </div>

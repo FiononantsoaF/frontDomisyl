@@ -150,8 +150,8 @@ interface BookingResponsePayement {
 }
 
 export interface Paiement {
-  amount: number;
   price: number;
+  amount: number;
   client_phone : string;
   appointment_id: number;
   subscription_id: number;
@@ -251,20 +251,19 @@ export interface ValidateResponsePaiement {
     transaction_id: number;
     notification_method: 'callback' | 'polling';
   };
-  errors?: Record<string, string[]>;
 }
 
 export interface PaymentStatusResponse {
   success: boolean;
   data?: {
-    reference: string;
     status: 'pending' | 'completed' | 'failed';
-    amount: number;
-    created_at: string;
-    updated_at: string;
+    serverCorrelationId: string;
+    notificationMethod: string;
+    objectReference: string;
   };
   message?: string;
 }
+
 
 export type PaymentStatus = 'pending' | 'completed' | 'failed' | 'checking';
 

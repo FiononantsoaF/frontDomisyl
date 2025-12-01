@@ -62,9 +62,9 @@ export const usePayment = () => {
 
     try {
       const statusResponse = await servicesService.pollStatus(
-        paymentReference,
-        Math.floor(maxWaitTime / 5000), 
-      );
+          paymentReference,
+          Math.floor(maxWaitTime / 5000), 
+        );
 
       if (statusResponse.data) {
         setPaymentStatus(statusResponse.data.status);
