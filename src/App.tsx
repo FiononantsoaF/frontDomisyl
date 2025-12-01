@@ -34,6 +34,7 @@ import { useBlockBackNavigation}   from './hooks/useBlockBackNavigation';
 import { usePayment } from './hooks/usePayment';
 import TestimonialsSection  from './components/testimonial/TestimonialsSection';
 import CarteCadeauCode from "./pages/cartecadeau/CarteCadeauCode";
+import PaiementVirement from './components/PaiementVirement';
 
 import { CarteCadeauClient } from "./api/carteCadeauService";
 import OverlayMessage from './components/OverlayMessage';
@@ -112,7 +113,12 @@ function App() {
   const debounceTimeout = useRef<NodeJS.Timeout | null>(null);
 
   const { overlay, showOverlay, closeOverlay } = useOverlay();
-  
+
+  const [paymentReference, setPaymentReference] = useState<string | null>(null);
+  const [isWaitingValidation, setIsWaitingValidation] = useState<boolean>(false);
+  const [paiementPayload, setPaiementPayload] = useState<Paiement | null>(null);
+  const [loadingPay, setLoadingPay] = useState<boolean>(false);
+
 
   const handleProfileClick = () => {
       navigate('/profile-edit');
@@ -573,6 +579,7 @@ function App() {
     const phoneRegex = /^(034|038)\d{7}$/;
     if (!phoneRegex.test(paiementData.client_phone)) {
       alert("Numéro invalide : il doit commencer par 034 ou 038 et contenir 10 chiffres.");
+      
       return;
     }
     setLoadingpay(true);
@@ -591,22 +598,28 @@ function App() {
         appointment_id: Number(paiementData.appointment_id),
         subscription_id: Number(paiementData.subscription_id),
       };
+      setPaiementPayload(payload);
       const response = await initiatePayment(payload);
       if (response.success && response.data) {
-        const finalStatus = await waitForPaymentConfirmation(response.data.reference);
-        if (finalStatus?.status === 'completed') {
-          alert('Paiement réussi ! Votre réservation est confirmée.');
-          resetPaiementForm();
-          setIsPaiementOpen(false);
-          refreshPage();
+        setLoadingpay(false);
+        setIsWaitingValidation(true);
+        setPaymentReference(response.data.reference);
+        return;
+        // const finalStatus = await waitForPaymentConfirmation(response.data.reference);
+        // if (finalStatus?.status === 'completed') {
+        //   alert('Paiement réussi ! Votre réservation est confirmée.');
+        //   resetPaiementForm();
+        //   setIsPaiementOpen(false);
+        //   refreshPage();
 
-        } else {
-          alert("Le paiement a échoué ou a été annulé.");
-          setLoadingpay(false);
+        // } else {
+        //   alert("Le paiement a échoué ou a été annulé.");
+        //   setLoadingpay(false);
           
-        }
+        // }
       } else {
         alert(" Erreur lors du paiement : " + (response.message || "Inconnue"));
+        setLoadingpay(false);
       }
 
       // if (result.success ) {
@@ -620,8 +633,55 @@ function App() {
       // }
 
     } catch {
-      setLoadingpay(true);
+      setLoadingpay(false);
     }
+  };
+
+  const handleConfirmPayment = async () => {
+    if (!paymentReference) return;
+    setLoadingpay(true);
+    try {
+      const finalStatus = await waitForPaymentConfirmation(paymentReference);
+      if (finalStatus?.status === "completed") {
+        // alert("Paiement réussi ! Votre réservation est confirmée.");
+        await showOverlay("Paiement réussi ! Votre réservation est confirmée.", "success");
+        resetPaiementForm();
+        setIsPaiementOpen(false);
+        refreshPage();
+      } else {
+        // alert("Le paiement a échoué ou a été annulé.");
+        await showOverlay("Le paiement a échoué ou a été annulé.", "error");
+      }
+    } catch {
+      alert("Délai dépassé ou erreur.");
+    }
+
+    setLoadingpay(false);
+  };
+
+  const handleRetryPayment = async () => {
+    if (!paiementPayload) {
+      // alert("Aucun paiement à réessayer !");
+      await showOverlay("Aucun paiement à réessayer !", "info");
+      return;
+    }
+    setLoadingPay(true);
+    try {
+      const response = await initiatePayment(paiementPayload);
+      if (response.success && response.data) {
+        // setPaymentReference(response.data.reference);
+        setIsWaitingValidation(true);
+        setPaymentReference(response.data.reference);
+        // alert("Un nouveau code a été envoyé !");
+        await showOverlay("Un nouveau code a été envoyé !", "info");
+      } else {
+        await showOverlay("Erreur lors de la réinitialisation du paiement.", "error");
+      }
+    } catch (err) {
+      alert("Erreur interne lors de la réessai du paiement.");
+    }
+
+    setLoadingPay(false);
   };
 
   const getServiceTypes = () => {
@@ -964,12 +1024,12 @@ function App() {
                   >
                     MVola
                   </button> 
-                  {/* <button
+                  <button
                     onClick={() => setSelectedMethod('stripe')}
                     className="flex-1 bg-gradient-to-r from-[#f9b131] to-[#f18f34] hover:from-[#f18f34] hover:to-[#f9b131] text-dark px-4 py-3.5 rounded-lg transition-all flex items-center justify-center gap-2 disabled:opacity-50 disabled:cursor-not-allowed font-bold shadow-md hover:shadow-lg"
                   >
                     Virement bancaire
-                  </button> */}
+                  </button>
                   <button
                     onClick={() => setSelectedMethod('orange')}
                     disabled={!acceptedCGV}
@@ -1052,22 +1112,41 @@ function App() {
         )}
 
         {/* Vue Stripe */}
-        {selectedMethod === 'stripe' && (
-          <Elements stripe={stripePromise}>
-            <PaiementStripe
-              amount={Number(paiementData.amount)}
-              appointment_id={paiementData.appointment_id}
-              subscription_id={paiementData.subscription_id}
-              onSuccess={() => {
-                alert("Paiement terminé");
-                refreshPage();
-              }}
-            />
-          </Elements>
-        )}
+      {selectedMethod === 'stripe' && (
+        <PaiementVirement amount={Number(paiementData.amount)} />
+      )}
       </div>
     );
   }
+
+  {isWaitingValidation && (
+    <div className="fixed inset-0 bg-black/50 flex justify-center items-center p-4">
+      <div className="bg-white rounded-lg p-6 w-full max-w-md text-center space-y-4 shadow-xl">
+
+        <p className="text-gray-700 text-lg font-semibold">
+          Un code a été envoyé à votre téléphone.  
+          <br />Veuillez confirmer votre paiement.
+        </p>
+
+        <div className="flex justify-center gap-3">
+          <button
+            onClick={handleConfirmPayment}
+            className="bg-green-600 text-white px-4 py-2 rounded-lg shadow"
+          >
+            Confirmer
+          </button>
+
+          <button
+            onClick={handleRetryPayment}
+            className="bg-gray-700 text-white px-4 py-2 rounded-lg shadow"
+          >
+            Réessayer
+          </button>
+        </div>
+
+      </div>
+    </div>
+  )}
 
 
   const renderLoginForm = () => (
@@ -1627,7 +1706,7 @@ function App() {
     );
 }
 
-  if (showServices && selectedShowService) { 
+if (showServices && selectedShowService) { 
     const service = services.find(
       s => s.title.toLowerCase().trim() === selectedShowService.toLowerCase().trim()
     );

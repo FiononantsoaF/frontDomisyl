@@ -16,6 +16,23 @@ const CarteCadeauCard: React.FC<CarteCadeauCardProps> = ({
   price,
 }) => {
   const [showDetails, setShowDetails] = useState(false);
+  const formatPrice = (value: any) => {
+    if (value === null || value === undefined) return "0";
+
+    const cleaned = String(value)
+      .replace(/\s+/g, "")   // retire les espaces
+      .replace(/,/g, ".");   // remplace virgule par point
+
+    const number = Number(cleaned);
+
+    if (isNaN(number)) return "0";
+
+    return number.toLocaleString("fr-FR", {
+      minimumFractionDigits: 0,
+      maximumFractionDigits: 0,
+    });
+  };
+
 
   return (
     <div className="relative">
@@ -98,12 +115,12 @@ const CarteCadeauCard: React.FC<CarteCadeauCardProps> = ({
               <div className="text-right">
                 {price !== prestation.price && (
                   <div className="text-sm line-through text-white/60 mb-1">
-                    {Number(prestation.price).toFixed(2)} Ar
+                    {Number(prestation.price).toLocaleString('fr-FR')}
                   </div>
                 )}
                 <div className="flex items-baseline gap-1">
                   <span className="text-2xl font-black text-white drop-shadow-lg">
-                    {Number(price).toFixed(2)}
+                    {Number(price).toLocaleString('fr-FR')} 
                   </span>
                   <span className="text-lg font-bold text-white/90">
                     Ar
@@ -191,9 +208,10 @@ const CarteCadeauCard: React.FC<CarteCadeauCardProps> = ({
                       <div className="text-right">
                         <div className="flex items-baseline gap-1">
                           <span className="text-2xl font-black text-white">
-                            {Number(
+                            {formatPrice(price ?? prestation.price)}
+                            {/* {Number(
                               price !== null && price !== undefined ? price : prestation.price
-                            ).toFixed(2)}
+                            ).toFixed(2)} */}
                           </span>
                           <span className="text-sm font-bold text-white/80">Ar</span>
                         </div>
